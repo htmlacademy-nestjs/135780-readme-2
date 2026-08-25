@@ -1,7 +1,7 @@
 # Личный проект «Readme»
 
 * Студент: [Денис Прокопьев](https://up.htmlacademy.ru/nodejs-2-individual/2/user/135780).
-* Наставник: `Неизвестно`.
+* Наставник: [Владислав Поклонский] (https://htmlacademy.ru/profile/id2210683).
 
 ---
 
