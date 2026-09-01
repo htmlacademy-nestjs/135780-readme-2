@@ -1,0 +1,106 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="readme-architecture" name="Архитектура Readme">
+    <mxGraphModel dx="3796" dy="1028" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1750" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="client" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#4B5563;strokeWidth=2;fontSize=16;arcSize=16;" value="&lt;b&gt;Клиент&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;анонимный или авторизованный&lt;/font&gt;" vertex="1">
+          <mxGeometry height="110" width="200" x="-60" y="237.5" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;strokeWidth=3;fontSize=16;fontColor=#3B0764;align=center;spacingLeft=16;arcSize=12;" value="&lt;b&gt;API Gateway&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(59, 7, 100), rgb(245, 200, 255));&quot;&gt;• единая точка входа&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(59, 7, 100), rgb(245, 200, 255));&quot;&gt;• проверка прав доступа&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="175" width="210" x="280" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="users" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=3;fontSize=16;fontColor=#1E3A8A;align=center;spacingLeft=16;arcSize=12;" value="&lt;b&gt;Сервис пользователей&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(30, 58, 138), rgb(163, 187, 255));&quot;&gt;• регистрация и вход&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(30, 58, 138), rgb(163, 187, 255));&quot;&gt;• хеширование паролей,&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(30, 58, 138), rgb(163, 187, 255));&quot;&gt;• профиль и смена пароля&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(30, 58, 138), rgb(163, 187, 255));&quot;&gt;• подписки и отписки&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(30, 58, 138), rgb(163, 187, 255));&quot;&gt;• счётчики подписчиков&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="215" width="330" x="725" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="content" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;strokeWidth=3;fontSize=16;fontColor=#14532D;align=left;spacingLeft=16;arcSize=12;" value="&lt;div style=&quot;text-align: center;&quot;&gt;&lt;b style=&quot;background-color: transparent; color: light-dark(rgb(20, 83, 45), rgb(140, 194, 162));&quot;&gt;Сервис публикаций&lt;/b&gt;&lt;/div&gt;&lt;br&gt;• публикации и репосты&lt;br&gt;• черновики, теги, сортировка&lt;br&gt;• комментарии и лайки&lt;br&gt;• поиск по заголовку&lt;br&gt;• общая и персональная лента&lt;br&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="230" width="360" x="1165" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="files" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#EA580C;strokeWidth=3;fontSize=16;fontColor=#7C2D12;align=center;spacingLeft=16;arcSize=12;" value="&lt;b&gt;Файловый сервис&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(124, 45, 18), rgb(240, 173, 149));&quot;&gt;• загрузка аватаров&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(124, 45, 18), rgb(240, 173, 149));&quot;&gt;• фото для публикаций&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="175" width="330" x="435" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="broker" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;fixedSize=1;fillColor=#FCE7F3;strokeColor=#DB2777;strokeWidth=2;fontSize=16;fontColor=#831843;" value="&lt;b&gt;Брокер сообщений&amp;nbsp;&lt;/b&gt;" vertex="1">
+          <mxGeometry height="100" width="380" x="1190" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="notifications" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=3;fontSize=16;fontColor=#78350F;align=left;spacingLeft=16;arcSize=12;" value="&lt;div style=&quot;text-align: center;&quot;&gt;&lt;b style=&quot;background-color: transparent; color: light-dark(rgb(120, 53, 15), rgb(230, 172, 140));&quot;&gt;Сервис уведомлений&lt;/b&gt;&lt;/div&gt;&lt;br&gt;• события пользователей и публикаций&lt;br&gt;• состояние последней рассылки&lt;br&gt;• список новых публикаций&lt;br&gt;• отправка email" vertex="1">
+          <mxGeometry height="205" width="430" x="1165" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="userdb" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#EFF6FF;strokeColor=#2563EB;strokeWidth=2;fontSize=14;fontColor=#1E3A8A;" value="&lt;b&gt;MongoDB&lt;/b&gt;&lt;br&gt;пользователи, хеши паролей,&lt;br&gt;подписки" vertex="1">
+          <mxGeometry height="80" width="250" x="765" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="contentdb" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#F0FDF4;strokeColor=#16A34A;strokeWidth=2;fontSize=14;fontColor=#14532D;" value="&lt;b&gt;PostgreSQL&lt;/b&gt;&lt;br&gt;публикации, теги, комментарии,&lt;br&gt;лайки и репосты" vertex="1">
+          <mxGeometry height="80" width="260" x="1215" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="filestore" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#FFF7ED;strokeColor=#EA580C;strokeWidth=2;fontSize=14;fontColor=#7C2D12;" value="&lt;b&gt;Файловое хранилище&lt;/b&gt;&lt;br&gt;локальная ФС / object storage" vertex="1">
+          <mxGeometry height="75" width="250" x="805" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="notifydb" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#FFFBEB;strokeColor=#D97706;strokeWidth=2;fontSize=14;fontColor=#78350F;" value="&lt;b&gt;MongoDB&lt;/b&gt;&lt;br&gt;email получателей, новые публикации,&lt;br&gt;состояние рассылки" vertex="1">
+          <mxGeometry height="80" width="260" x="1090" y="860" as="geometry" />
+        </mxCell>
+        <mxCell id="smtp" parent="1" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#6B7280;strokeWidth=2;fontSize=15;fontColor=#374151;" value="&lt;b&gt;Почтовый сервер&lt;/b&gt;&lt;br&gt;SMTP" vertex="1">
+          <mxGeometry height="75" width="200" x="1425" y="865" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="client" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;strokeColor=#4B5563;strokeWidth=2;fontSize=13;labelBackgroundColor=#FFFFFF;" target="gateway" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="gateway" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;strokeColor=#4B5563;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" target="users" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="gateway" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;strokeColor=#4B5563;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" target="content" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="660" y="415" />
+              <mxPoint x="1125" y="415" />
+              <mxPoint x="1125" y="220" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="gateway" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;strokeColor=#4B5563;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" target="files" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="gateway" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;strokeColor=#4B5563;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;entryX=-0.002;entryY=0.454;entryDx=0;entryDy=0;entryPerimeter=0;" target="notifications" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="385" y="700" />
+              <mxPoint x="1164.1" y="700" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="users" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;strokeColor=#2563EB;strokeWidth=2;" target="userdb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="content" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;strokeColor=#16A34A;strokeWidth=2;" target="contentdb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="files" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;strokeColor=#EA580C;strokeWidth=2;" target="filestore">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="users" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;dashed=1;dashPattern=8 8;strokeColor=#DB2777;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" target="broker" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1100" y="170" />
+              <mxPoint x="1100" y="510" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="content" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;dashed=1;dashPattern=8 8;strokeColor=#DB2777;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" target="broker" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1640" y="220" />
+              <mxPoint x="1640" y="510" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="broker" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;dashed=1;dashPattern=8 8;strokeColor=#DB2777;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" target="notifications" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="notifications" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;strokeColor=#D97706;strokeWidth=2;" target="notifydb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="notifications" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;strokeColor=#6B7280;strokeWidth=2;fontSize=12;labelBackgroundColor=#FFFFFF;" target="smtp" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
