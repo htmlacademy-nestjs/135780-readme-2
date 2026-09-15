@@ -10,6 +10,14 @@ export interface CreateUserData {
   avatarId?: string;
 }
 
+export interface StoredUserData extends CreateUserData {
+  id: string;
+  createdAt: Date;
+  publicationCount: number;
+  subscriberCount: number;
+  passwordHash: string;
+}
+
 export class UserEntity implements User {
   public readonly id: string;
   public readonly email: string;
@@ -18,22 +26,34 @@ export class UserEntity implements User {
   public readonly createdAt: Date;
   public readonly publicationCount: number;
   public readonly subscriberCount: number;
-  private passwordHash = '';
+  private passwordHash: string;
 
-  private constructor(data: CreateUserData) {
-    this.id = randomUUID();
+  private constructor(data: StoredUserData) {
+    this.id = data.id;
     this.email = data.email;
     this.name = data.name;
     this.avatarId = data.avatarId;
-    this.createdAt = new Date();
-    this.publicationCount = 0;
-    this.subscriberCount = 0;
+    this.createdAt = data.createdAt;
+    this.publicationCount = data.publicationCount;
+    this.subscriberCount = data.subscriberCount;
+    this.passwordHash = data.passwordHash;
   }
 
   public static async create(data: CreateUserData, password: string): Promise<UserEntity> {
-    const entity = new UserEntity(data);
+    const entity = new UserEntity({
+      ...data,
+      id: randomUUID(),
+      createdAt: new Date(),
+      publicationCount: 0,
+      subscriberCount: 0,
+      passwordHash: '',
+    });
     await entity.setPassword(password);
     return entity;
+  }
+
+  public static restore(data: StoredUserData): UserEntity {
+    return new UserEntity(data);
   }
 
   public getPasswordHash(): string {
