@@ -7,10 +7,23 @@ export class LikeEntity implements Like {
   public readonly userId: string;
   public readonly createdAt: Date;
 
-  public constructor(publicationId: string, userId: string) {
-    this.id = randomUUID();
-    this.publicationId = publicationId;
-    this.userId = userId;
-    this.createdAt = new Date();
+  private constructor(data: Like) {
+    this.id = data.id;
+    this.publicationId = data.publicationId;
+    this.userId = data.userId;
+    this.createdAt = data.createdAt;
+  }
+
+  public static create(publicationId: string, userId: string): LikeEntity {
+    return new LikeEntity({
+      id: randomUUID(),
+      publicationId,
+      userId,
+      createdAt: new Date(),
+    });
+  }
+
+  public static restore(data: Like): LikeEntity {
+    return new LikeEntity(data);
   }
 }

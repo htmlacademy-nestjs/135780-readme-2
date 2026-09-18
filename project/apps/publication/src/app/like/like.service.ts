@@ -25,7 +25,7 @@ export class LikeService {
       throw new ConflictException('Publication is already liked');
     }
 
-    return this.repository.save(new LikeEntity(publicationId, userId));
+    return this.repository.save(LikeEntity.create(publicationId, userId));
   }
 
   public async remove(publicationId: string, userId: string): Promise<void> {

@@ -10,12 +10,21 @@ services:
       MONGO_INITDB_DATABASE: ${MONGO_DB}
     volumes:
       - account-mongo-data:/data/db
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mongosh --quiet --username $${MONGO_INITDB_ROOT_USERNAME} --password $${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase admin --eval "db.adminCommand('ping').ok" > /dev/null || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   mongo-express:
     image: mongo-express:1.0.2-20
     restart: unless-stopped
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     ports:
       - ${MONGO_EXPRESS_PORT}:8081
     environment:

@@ -1,0 +1,41 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "@project/publication",
+  "targets": {
+    "db-validate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma validate --schema=prisma/schema.prisma",
+        "cwd": "apps/publication"
+      }
+    },
+    "db-generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma generate --schema=prisma/schema.prisma",
+        "cwd": "apps/publication"
+      }
+    },
+    "db-reset": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma migrate reset --force --skip-seed --schema=prisma/schema.prisma",
+        "cwd": "apps/publication"
+      }
+    },
+    "db-migrate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma migrate deploy --schema=prisma/schema.prisma",
+        "cwd": "apps/publication"
+      }
+    },
+    "db-fill": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx --env-file=.env prisma/seed.ts",
+        "cwd": "apps/publication"
+      }
+    }
+  }
+}

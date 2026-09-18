@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { LikeController } from './like.controller';
-import { LikeMemoryRepository } from './like-memory.repository';
+import { LikePrismaRepository } from './like-prisma.repository';
 import { LIKE_REPOSITORY } from './like.repository';
 import { LikeService } from './like.service';
 
@@ -8,10 +8,10 @@ import { LikeService } from './like.service';
   controllers: [LikeController],
   providers: [
     LikeService,
-    LikeMemoryRepository,
+    LikePrismaRepository,
     {
       provide: LIKE_REPOSITORY,
-      useExisting: LikeMemoryRepository,
+      useExisting: LikePrismaRepository,
     },
   ],
 })

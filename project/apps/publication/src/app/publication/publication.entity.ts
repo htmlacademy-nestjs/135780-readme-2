@@ -45,6 +45,14 @@ export class PublicationEntity implements Publication {
     this.applyContent(dto);
   }
 
+  public static restore(data: Publication): PublicationEntity {
+    const entity = Object.create(
+      PublicationEntity.prototype,
+    ) as PublicationEntity;
+    Object.assign(entity, data);
+    return entity;
+  }
+
   public static createRepost(
     original: PublicationEntity,
     authorId: string,
