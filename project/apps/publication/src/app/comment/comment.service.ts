@@ -26,7 +26,7 @@ export class CommentService {
     dto: CreateCommentDto,
   ): Promise<CommentEntity> {
     return this.repository.save(
-      new CommentEntity(publicationId, authorId, dto.text),
+      CommentEntity.create(publicationId, authorId, dto.text),
     );
   }
 

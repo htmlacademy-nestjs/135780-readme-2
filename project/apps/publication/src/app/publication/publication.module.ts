@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PublicationController } from './publication.controller';
-import { PublicationMemoryRepository } from './publication-memory.repository';
+import { PublicationPrismaRepository } from './publication-prisma.repository';
 import { PUBLICATION_REPOSITORY } from './publication.repository';
 import { PublicationService } from './publication.service';
 
@@ -8,10 +8,10 @@ import { PublicationService } from './publication.service';
   controllers: [PublicationController],
   providers: [
     PublicationService,
-    PublicationMemoryRepository,
+    PublicationPrismaRepository,
     {
       provide: PUBLICATION_REPOSITORY,
-      useExisting: PublicationMemoryRepository,
+      useExisting: PublicationPrismaRepository,
     },
   ],
 })

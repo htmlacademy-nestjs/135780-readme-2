@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PublicationType {
+  video
+  text
+  quote
+  photo
+  link
+}
+
+enum PublicationStatus {
+  published
+  draft
+}
+
+model Publication {
+  id                    String            @id @default(uuid()) @db.Uuid
+  authorId              String            @map("author_id") @db.Uuid
+  type                  PublicationType
+  status                PublicationStatus @default(published)
+  createdAt             DateTime          @default(now()) @map("created_at")
+  publishedAt           DateTime          @default(now()) @map("published_at")
+  tags                  String[]
+  likeCount             Int               @default(0) @map("like_count")
+  commentCount          Int               @default(0) @map("comment_count")
+  isRepost              Boolean           @default(false) @map("is_repost")
+  originalPublicationId String?           @map("original_publication_id") @db.Uuid
+  originalAuthorId      String?           @map("original_author_id") @db.Uuid
+  title                 String?           @db.VarChar(50)
+  videoUrl              String?           @map("video_url")
+  announcement          String?           @db.VarChar(255)
+  text                  String?
+  quoteAuthor           String?           @map("quote_author") @db.VarChar(50)
+  photoId               String?           @map("photo_id")
+  linkUrl               String?           @map("link_url")
+  description           String?           @db.VarChar(300)
+  originalPublication   Publication?      @relation("PublicationReposts", fields: [originalPublicationId], references: [id], onDelete: SetNull)
+  reposts               Publication[]     @relation("PublicationReposts")
+  comments              Comment[]
+  likes                 Like[]
+
+  @@index([authorId])
+  @@index([status, publishedAt])
+  @@index([originalPublicationId])
+  @@map("publications")
+}
+
+model Comment {
+  id            String      @id @default(uuid()) @db.Uuid
+  publicationId String      @map("publication_id") @db.Uuid
+  authorId      String      @map("author_id") @db.Uuid
+  text          String      @db.VarChar(300)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  publication   Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
+  @@index([publicationId, createdAt])
+  @@map("comments")
+}
+
+model Like {
+  id            String      @id @default(uuid()) @db.Uuid
+  publicationId String      @map("publication_id") @db.Uuid
+  userId        String      @map("user_id") @db.Uuid
+  createdAt     DateTime    @default(now()) @map("created_at")
+  publication   Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
+  @@unique([publicationId, userId])
+  @@map("likes")
+}
