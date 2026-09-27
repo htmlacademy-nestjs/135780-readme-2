@@ -12,6 +12,7 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiHeader,
@@ -19,17 +20,18 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { UserId } from '../common/user-id.decorator';
 import { CreatePublicationDto } from './dto/create-publication.dto';
 import { PublicationQueryDto } from './dto/publication-query.dto';
+import { SearchPublicationQueryDto } from './dto/search-publication-query.dto';
 import { UpdatePublicationDto } from './dto/update-publication.dto';
 import { PublicationEntity } from './publication.entity';
 import { PublicationService } from './publication.service';
 
 @ApiTags('publications')
+@ApiBadRequestResponse({ description: 'Request validation failed' })
 @Controller('publications')
 export class PublicationController {
   public constructor(private readonly service: PublicationService) {}
@@ -56,10 +58,11 @@ export class PublicationController {
 
   @Get('search')
   @ApiOperation({ summary: 'Search publications by title' })
-  @ApiQuery({ name: 'title', required: true })
   @ApiOkResponse({ description: 'Up to 20 matching publications' })
-  public search(@Query('title') title: string): Promise<PublicationEntity[]> {
-    return this.service.search(title);
+  public search(
+    @Query() query: SearchPublicationQueryDto,
+  ): Promise<PublicationEntity[]> {
+    return this.service.search(query.title);
   }
 
   @Get('drafts')

@@ -35,7 +35,7 @@ export class UserService {
     return this.createDetail(entity);
   }
 
-  public async login(dto: LoginUserDto): Promise<UserDetailRdo> {
+  public async verifyCredentials(dto: LoginUserDto): Promise<UserDetailRdo> {
     const entity = await this.repository.findByEmail(dto.email.toLowerCase());
 
     if (!entity || !(await entity.comparePassword(dto.password))) {

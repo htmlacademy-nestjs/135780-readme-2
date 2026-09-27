@@ -40,10 +40,14 @@ export class CommentPrismaRepository implements CommentRepository {
 
   public async findByPublicationId(
     publicationId: string,
+    offset: number,
+    limit: number,
   ): Promise<CommentEntity[]> {
     const comments = await this.prisma.comment.findMany({
       where: { publicationId },
       orderBy: { createdAt: 'desc' },
+      skip: offset,
+      take: limit,
     });
 
     return comments.map((comment) => this.toEntity(comment));

@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { createMongoConnectionString } from './config/database.config';
 import { validateEnvironment } from './config/environment.validation';
+import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 
 @Module({
@@ -20,6 +21,7 @@ import { UserModule } from './user/user.module';
       }),
     }),
     UserModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

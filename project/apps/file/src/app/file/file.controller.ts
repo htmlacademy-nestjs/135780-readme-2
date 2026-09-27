@@ -9,6 +9,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
@@ -26,6 +27,7 @@ const MAX_IMAGE_SIZE = 1024 * 1024;
 const IMAGE_FILE_TYPE = /(jpeg|png)$/;
 
 @ApiTags('files')
+@ApiBadRequestResponse({ description: 'Request validation failed' })
 @Controller('files')
 export class FileController {
   public constructor(private readonly service: FileService) {}

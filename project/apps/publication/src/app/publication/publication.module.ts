@@ -14,5 +14,6 @@ import { PublicationService } from './publication.service';
       useExisting: PublicationPrismaRepository,
     },
   ],
+  exports: [PublicationService],
 })
 export class PublicationModule {}

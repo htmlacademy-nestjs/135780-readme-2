@@ -5,19 +5,21 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CommentEntity } from './comment.entity';
+import { PublicationService } from '../publication/publication.service';
 import {
   COMMENT_REPOSITORY,
   type CommentRepository,
 } from './comment.repository';
 import { CreateCommentDto } from './dto/create-comment.dto';
-
-const DEFAULT_COMMENT_LIMIT = 50;
+import { CommentQueryDto } from './dto/comment-query.dto';
+import { QUERY_LIMITS } from '../common/query.constants';
 
 @Injectable()
 export class CommentService {
   public constructor(
     @Inject(COMMENT_REPOSITORY)
     private readonly repository: CommentRepository,
+    private readonly publicationService: PublicationService,
   ) {}
 
   public async create(
@@ -25,6 +27,7 @@ export class CommentService {
     authorId: string,
     dto: CreateCommentDto,
   ): Promise<CommentEntity> {
+    await this.publicationService.getPublishedById(publicationId);
     return this.repository.save(
       CommentEntity.create(publicationId, authorId, dto.text),
     );
@@ -32,11 +35,16 @@ export class CommentService {
 
   public async findByPublicationId(
     publicationId: string,
-    page = 1,
+    query: CommentQueryDto,
   ): Promise<CommentEntity[]> {
-    const comments = await this.repository.findByPublicationId(publicationId);
-    const offset = (page - 1) * DEFAULT_COMMENT_LIMIT;
-    return comments.slice(offset, offset + DEFAULT_COMMENT_LIMIT);
+    await this.publicationService.getPublishedById(publicationId);
+    const page = query.page ?? QUERY_LIMITS.defaultPage;
+    const offset = (page - 1) * QUERY_LIMITS.commentsPerPage;
+    return this.repository.findByPublicationId(
+      publicationId,
+      offset,
+      QUERY_LIMITS.commentsPerPage,
+    );
   }
 
   public async delete(
