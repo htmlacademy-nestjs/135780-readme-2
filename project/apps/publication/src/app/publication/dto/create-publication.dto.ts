@@ -12,14 +12,18 @@ import {
   IsEnum,
   IsOptional,
   IsString,
+  IsUUID,
   IsUrl,
   Length,
   Matches,
   MaxLength,
   ValidateIf,
 } from 'class-validator';
+import { IsPublicationText } from './publication-text.validator';
 
 const TAG_PATTERN = /^[a-zа-яё][a-zа-яё0-9-]{2,9}$/i;
+const YOUTUBE_URL_PATTERN =
+  /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?(?:[^#\s]*&)?v=[\w-]+|youtu\.be\/[\w-]+)(?:[?&#][^\s]*)?$/i;
 
 export class CreatePublicationDto {
   @ApiProperty({ enum: PublicationType })
@@ -46,6 +50,7 @@ export class CreatePublicationDto {
   )
   @IsDefined()
   @IsUrl()
+  @Matches(YOUTUBE_URL_PATTERN)
   public videoUrl?: string;
 
   @ApiPropertyOptional({ minLength: 50, maxLength: 255 })
@@ -57,13 +62,15 @@ export class CreatePublicationDto {
   @Length(50, 255)
   public announcement?: string;
 
-  @ApiPropertyOptional({ minLength: 20, maxLength: 1024 })
+  @ApiPropertyOptional({
+    description: '100–1024 characters for text, 20–300 for a quote',
+  })
   @ValidateIf((dto: CreatePublicationDto) =>
     [PublicationType.Text, PublicationType.Quote].includes(dto.type),
   )
   @IsDefined()
   @IsString()
-  @Length(20, 1024)
+  @IsPublicationText()
   public text?: string;
 
   @ApiPropertyOptional({ minLength: 3, maxLength: 50 })
@@ -80,7 +87,7 @@ export class CreatePublicationDto {
     dto.type === PublicationType.Photo,
   )
   @IsDefined()
-  @IsString()
+  @IsUUID()
   public photoId?: string;
 
   @ApiPropertyOptional()

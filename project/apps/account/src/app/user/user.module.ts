@@ -21,5 +21,6 @@ import { UserService } from './user.service';
       useExisting: UserMongoRepository,
     },
   ],
+  exports: [UserService],
 })
 export class UserModule {}

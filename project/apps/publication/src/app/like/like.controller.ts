@@ -8,10 +8,12 @@ import {
   Post,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiHeader,
   ApiNoContentResponse,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
@@ -20,6 +22,7 @@ import { LikeEntity } from './like.entity';
 import { LikeService } from './like.service';
 
 @ApiTags('likes')
+@ApiBadRequestResponse({ description: 'Request validation failed' })
 @Controller('publications/:publicationId/likes')
 export class LikeController {
   public constructor(private readonly service: LikeService) {}
@@ -29,6 +32,7 @@ export class LikeController {
   @ApiOperation({ summary: 'Like a publication' })
   @ApiCreatedResponse({ description: 'Like created' })
   @ApiConflictResponse({ description: 'Publication is already liked' })
+  @ApiNotFoundResponse({ description: 'Published publication not found' })
   public add(
     @Param('publicationId', ParseUUIDPipe) publicationId: string,
     @UserId(ParseUUIDPipe) userId: string,
