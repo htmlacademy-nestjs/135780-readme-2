@@ -81,6 +81,7 @@
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^12.0.0",
     "@nestjs/core": "^11.0.0",
+    "@nestjs/microservices": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/swagger": "^11.4.7",
     "@prisma/client": "^6.19.3",

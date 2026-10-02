@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
+import { AccountNotificationPublisher } from '../notification/notification.publisher';
 import { LoginUserDto } from './dto/login-user.dto';
 import { UserDetailRdo } from './rdo/user-detail.rdo';
 import { UserEntity } from './user.entity';
@@ -16,6 +17,7 @@ export class UserService {
   public constructor(
     @Inject(USER_REPOSITORY)
     private readonly repository: UserRepository,
+    private readonly notificationPublisher: AccountNotificationPublisher,
   ) {}
 
   public async register(dto: CreateUserDto): Promise<UserDetailRdo> {
@@ -32,6 +34,11 @@ export class UserService {
     );
 
     await this.repository.save(entity);
+    await this.notificationPublisher.publishUserRegistered({
+      userId: entity.id,
+      email: entity.email,
+      name: entity.name,
+    });
     return this.createDetail(entity);
   }
 

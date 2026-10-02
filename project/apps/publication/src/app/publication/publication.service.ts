@@ -11,6 +11,7 @@ import {
   PublicationStatus,
 } from '@project/shared-types';
 import { QUERY_LIMITS } from '../common/query.constants';
+import { PublicationNotificationPublisher } from '../notification/notification.publisher';
 import { CreatePublicationDto } from './dto/create-publication.dto';
 import { PublicationQueryDto } from './dto/publication-query.dto';
 import { UpdatePublicationDto } from './dto/update-publication.dto';
@@ -25,13 +26,18 @@ export class PublicationService {
   public constructor(
     @Inject(PUBLICATION_REPOSITORY)
     private readonly repository: PublicationRepository,
+    private readonly notificationPublisher: PublicationNotificationPublisher,
   ) {}
 
   public async create(
     dto: CreatePublicationDto,
     authorId: string,
   ): Promise<PublicationEntity> {
-    return this.repository.save(new PublicationEntity(dto, authorId));
+    const entity = await this.repository.save(new PublicationEntity(dto, authorId));
+    if (entity.status === PublicationStatus.Published) {
+      await this.publish(entity);
+    }
+    return entity;
   }
 
   public async findPublished(
@@ -80,8 +86,13 @@ export class PublicationService {
   ): Promise<PublicationEntity> {
     const entity = await this.getById(id);
     this.ensureOwner(entity, authorId);
+    const wasDraft = entity.status === PublicationStatus.Draft;
     entity.update(dto);
-    return this.repository.save(entity);
+    const saved = await this.repository.save(entity);
+    if (wasDraft && saved.status === PublicationStatus.Published) {
+      await this.publish(saved);
+    }
+    return saved;
   }
 
   public async delete(id: string, authorId: string): Promise<void> {
@@ -108,9 +119,21 @@ export class PublicationService {
       throw new ConflictException('Publication has already been reposted');
     }
 
-    return this.repository.save(
+    const repost = await this.repository.save(
       PublicationEntity.createRepost(original, authorId),
     );
+    await this.publish(repost);
+    return repost;
+  }
+
+  private async publish(entity: PublicationEntity): Promise<void> {
+    await this.notificationPublisher.publishPublicationPublished({
+      publicationId: entity.id,
+      authorId: entity.authorId,
+      type: entity.type,
+      title: entity.title,
+      publishedAt: entity.publishedAt.toISOString(),
+    });
   }
 
   private ensureOwner(entity: PublicationEntity, authorId: string): void {

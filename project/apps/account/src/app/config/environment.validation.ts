@@ -30,6 +30,8 @@ const environmentValidationSchema = Joi.object({
     .invalid(Joi.ref(JWT_CONFIGURATION.accessSecret))
     .required(),
   [JWT_CONFIGURATION.refreshExpiresIn]: Joi.string().default('7d'),
+  RABBITMQ_URL: Joi.string().uri({ scheme: ['amqp', 'amqps'] }).required(),
+  RABBITMQ_QUEUE: Joi.string().required(),
 });
 
 export function validateEnvironment(
