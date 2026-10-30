@@ -1,3 +1,4 @@
+import { HttpErrorRdo } from '@project/shared-api';
 import {
   Body,
   Controller,
@@ -21,13 +22,17 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { UserId } from '../common/user-id.decorator';
+import { CommentRdo } from '@project/shared-api';
 import { CommentEntity } from './comment.entity';
 import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CommentQueryDto } from './dto/comment-query.dto';
 
 @ApiTags('comments')
-@ApiBadRequestResponse({ description: 'Request validation failed' })
+@ApiBadRequestResponse({
+  type: HttpErrorRdo,
+  description: 'Request validation failed',
+})
 @Controller('publications/:publicationId/comments')
 export class CommentController {
   public constructor(private readonly service: CommentService) {}
@@ -35,8 +40,11 @@ export class CommentController {
   @Post()
   @ApiHeader({ name: 'x-user-id', description: 'Forwarded by API Gateway' })
   @ApiOperation({ summary: 'Add a comment' })
-  @ApiCreatedResponse({ description: 'Comment created' })
-  @ApiNotFoundResponse({ description: 'Published publication not found' })
+  @ApiCreatedResponse({ type: CommentRdo, description: 'Comment created' })
+  @ApiNotFoundResponse({
+    type: HttpErrorRdo,
+    description: 'Published publication not found',
+  })
   public create(
     @Param('publicationId', ParseUUIDPipe) publicationId: string,
     @UserId(ParseUUIDPipe) authorId: string,
@@ -47,8 +55,11 @@ export class CommentController {
 
   @Get()
   @ApiOperation({ summary: 'Get publication comments' })
-  @ApiOkResponse({ description: 'Up to 50 comments' })
-  @ApiNotFoundResponse({ description: 'Published publication not found' })
+  @ApiOkResponse({ type: [CommentRdo], description: 'Up to 50 comments' })
+  @ApiNotFoundResponse({
+    type: HttpErrorRdo,
+    description: 'Published publication not found',
+  })
   public find(
     @Param('publicationId', ParseUUIDPipe) publicationId: string,
     @Query() query: CommentQueryDto,

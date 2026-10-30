@@ -36,7 +36,7 @@ export class SubscriptionRepository {
               createdAt: new Date(),
             },
           },
-          { upsert: true, new: true, runValidators: true },
+          { upsert: true, returnDocument: 'after', runValidators: true },
         )
         .lean()
         .exec();

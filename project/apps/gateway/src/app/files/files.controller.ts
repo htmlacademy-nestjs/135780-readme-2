@@ -1,3 +1,4 @@
+import { HttpErrorRdo } from '@project/shared-api';
 import { FilesGatewayService, type ImageUpload } from './files.service';
 import {
   Controller,
@@ -38,7 +39,10 @@ const UPLOAD_SCHEMA = {
 
 @ApiTags('files')
 @ApiBackendResponses()
-@ApiPayloadTooLargeResponse({ description: 'Image exceeds the allowed size' })
+@ApiPayloadTooLargeResponse({
+  type: HttpErrorRdo,
+  description: 'Image exceeds the allowed size',
+})
 @Controller('files')
 export class FilesController {
   public constructor(private readonly service: FilesGatewayService) {}

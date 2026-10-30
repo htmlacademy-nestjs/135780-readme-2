@@ -121,3 +121,15 @@ test('invalid type values cannot access inherited object properties or throw dur
     assert.ok((await validate(dto)).length > 0);
   }
 });
+
+test('publication dates accepted by validation can be converted to valid Date values', async () => {
+  for (const publishedAt of ['20261030', '2026-W44-5', '2026-303']) {
+    const errors = await validate(
+      plainToInstance(UpdatePublicationDto, { publishedAt }),
+    );
+    assert.ok(
+      errors.length > 0,
+      `Unsupported date ${publishedAt} was accepted`,
+    );
+  }
+});

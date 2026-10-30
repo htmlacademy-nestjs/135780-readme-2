@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Like as LikeModel } from '@prisma/client';
+import { PublicationStatus } from '@project/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { LikeEntity } from './like.entity';
 import { LikeRepository } from './like.repository';
@@ -10,6 +11,13 @@ export class LikePrismaRepository implements LikeRepository {
 
   public async save(entity: LikeEntity): Promise<LikeEntity> {
     const like = await this.prisma.$transaction(async (transaction) => {
+      await transaction.publication.update({
+        where: {
+          id: entity.publicationId,
+          status: PublicationStatus.Published,
+        },
+        data: { likeCount: { increment: 1 } },
+      });
       const savedLike = await transaction.like.create({
         data: {
           id: entity.id,
@@ -17,11 +25,6 @@ export class LikePrismaRepository implements LikeRepository {
           userId: entity.userId,
           createdAt: entity.createdAt,
         },
-      });
-
-      await transaction.publication.update({
-        where: { id: entity.publicationId },
-        data: { likeCount: { increment: 1 } },
       });
 
       return savedLike;

@@ -6,7 +6,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PublicationSort, PublicationStatus } from '@project/shared-types';
+import {
+  NotificationRabbitRouting,
+  PublicationSort,
+  PublicationStatus,
+  type PublicationNotificationEvent,
+} from '@project/shared-types';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import type { FeedQueryDto } from '@project/shared-api';
@@ -33,13 +38,16 @@ export class PublicationService {
     dto: CreatePublicationDto,
     authorId: string,
   ): Promise<PublicationEntity> {
-    const entity = await this.repository.save(
-      new PublicationEntity(dto, authorId),
-    );
-    if (entity.status === PublicationStatus.Published) {
-      await this.publish(entity);
+    const entity = new PublicationEntity(dto, authorId);
+    const event =
+      entity.status === PublicationStatus.Published
+        ? this.createEvent(entity)
+        : undefined;
+    const saved = await this.repository.save(entity, event);
+    if (event) {
+      await this.notificationPublisher.flush();
     }
-    return entity;
+    return saved;
   }
 
   public async countPublishedByAuthor(
@@ -127,15 +135,23 @@ export class PublicationService {
       );
     }
     entity.update(dto);
-    const saved = await this.repository.save(entity);
-    if (wasDraft && saved.status === PublicationStatus.Published) {
-      await this.publish(saved);
-    } else if (saved.status === PublicationStatus.Published) {
-      await this.notificationPublisher.publishPublicationChanged(
-        this.createEvent(saved),
-      );
-    } else if (!wasDraft) {
-      await this.notificationPublisher.publishPublicationWithdrawn(saved.id);
+    const event =
+      entity.status === PublicationStatus.Published
+        ? this.createEvent(
+            entity,
+            wasDraft
+              ? NotificationRabbitRouting.PublicationPublished
+              : NotificationRabbitRouting.PublicationChanged,
+          )
+        : wasDraft
+          ? undefined
+          : this.createEvent(
+              entity,
+              NotificationRabbitRouting.PublicationWithdrawn,
+            );
+    const saved = await this.repository.update(entity, event);
+    if (event) {
+      await this.notificationPublisher.flush();
     }
     return saved;
   }
@@ -143,8 +159,14 @@ export class PublicationService {
   public async delete(id: string, authorId: string): Promise<void> {
     const entity = await this.getById(id);
     this.ensureOwner(entity, authorId);
-    await this.repository.delete(id);
-    await this.notificationPublisher.publishPublicationWithdrawn(id);
+    const deleted = await this.repository.delete(
+      id,
+      this.createEvent(entity, NotificationRabbitRouting.PublicationWithdrawn),
+    );
+    if (!deleted) {
+      throw new NotFoundException('Publication not found');
+    }
+    await this.notificationPublisher.flush();
   }
 
   public async repost(
@@ -165,27 +187,27 @@ export class PublicationService {
       throw new ConflictException('Publication has already been reposted');
     }
 
-    const repost = await this.repository.save(
-      PublicationEntity.createRepost(original, authorId),
-    );
-    await this.publish(repost);
+    const entity = PublicationEntity.createRepost(original, authorId);
+    const repost = await this.repository.save(entity, this.createEvent(entity));
+    await this.notificationPublisher.flush();
     return repost;
   }
 
-  private async publish(entity: PublicationEntity): Promise<void> {
-    await this.notificationPublisher.publishPublicationPublished(
-      this.createEvent(entity),
-    );
-  }
-
-  private createEvent(entity: PublicationEntity) {
-    return {
-      publicationId: entity.id,
-      authorId: entity.authorId,
-      type: entity.type,
-      title: entity.title,
-      publishedAt: entity.publishedAt.toISOString(),
-    };
+  private createEvent(
+    entity: PublicationEntity,
+    pattern: PublicationNotificationEvent['pattern'] = NotificationRabbitRouting.PublicationPublished,
+  ): PublicationNotificationEvent {
+    const payload =
+      pattern === NotificationRabbitRouting.PublicationWithdrawn
+        ? { publicationId: entity.id }
+        : {
+            publicationId: entity.id,
+            authorId: entity.authorId,
+            type: entity.type,
+            ...(entity.title ? { title: entity.title } : {}),
+            publishedAt: entity.publishedAt.toISOString(),
+          };
+    return { pattern, payload };
   }
 
   private ensureOwner(entity: PublicationEntity, authorId: string): void {

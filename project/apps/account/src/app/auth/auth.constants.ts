@@ -1,4 +1,1 @@
-export enum TokenType {
-  Access = 'access',
-  Refresh = 'refresh',
-}
+export { TokenType } from '@project/shared-types';

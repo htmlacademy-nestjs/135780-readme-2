@@ -1,11 +1,12 @@
 import * as Joi from 'joi';
-
-const DEFAULT_APP_PORT = 3001;
+import { APPLICATION_PORTS } from '@project/shared-api';
 
 const environmentValidationSchema = Joi.object({
-  PORT: Joi.number().port().default(DEFAULT_APP_PORT),
+  PORT: Joi.number().port().default(APPLICATION_PORTS.publication),
   DATABASE_URL: Joi.string().required(),
-  RABBITMQ_URL: Joi.string().uri({ scheme: ['amqp', 'amqps'] }).required(),
+  RABBITMQ_URL: Joi.string()
+    .uri({ scheme: ['amqp', 'amqps'] })
+    .required(),
   RABBITMQ_QUEUE: Joi.string().required(),
 });
 

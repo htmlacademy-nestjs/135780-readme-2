@@ -11,8 +11,7 @@ import {
   Min,
 } from 'class-validator';
 import { QUERY_LIMITS } from './query.constants.js';
-
-const TAG_PATTERN = /^[a-zа-яё][a-zа-яё0-9-]{2,9}$/i;
+import { TAG_PATTERN } from './publication.constants.js';
 
 export class PublicationQueryDto {
   @ApiPropertyOptional({ enum: PublicationType })

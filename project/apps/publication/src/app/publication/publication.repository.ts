@@ -2,6 +2,7 @@ import {
   PublicationSort,
   PublicationType,
   Repository,
+  PublicationNotificationEvent,
 } from '@project/shared-types';
 import { PublicationEntity } from './publication.entity';
 
@@ -18,6 +19,14 @@ export interface PublicationFilter {
 }
 
 export interface PublicationRepository extends Repository<PublicationEntity> {
+  save(
+    entity: PublicationEntity,
+    event?: PublicationNotificationEvent,
+  ): Promise<PublicationEntity>;
+  update(
+    entity: PublicationEntity,
+    event?: PublicationNotificationEvent,
+  ): Promise<PublicationEntity>;
   countPublishedByAuthor(authorId: string): Promise<number>;
   findPublished(filter: PublicationFilter): Promise<PublicationEntity[]>;
   findDrafts(authorId: string): Promise<PublicationEntity[]>;
@@ -26,5 +35,5 @@ export interface PublicationRepository extends Repository<PublicationEntity> {
     authorId: string,
     originalPublicationId: string,
   ): Promise<PublicationEntity | null>;
-  delete(id: string): Promise<boolean>;
+  delete(id: string, event?: PublicationNotificationEvent): Promise<boolean>;
 }

@@ -2,14 +2,15 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { APPLICATION_PORTS, HTTP_SETTINGS } from '@project/shared-api';
 import { AppModule } from './app/app.module';
 
-const GLOBAL_PREFIX = 'api';
-const DEFAULT_PORT = 3004;
-const SWAGGER_PATH = 'swagger';
+const GLOBAL_PREFIX = HTTP_SETTINGS.globalPrefix;
+const DEFAULT_PORT = APPLICATION_PORTS.gateway;
+const SWAGGER_PATH = HTTP_SETTINGS.swaggerPath;
 const API_TITLE = 'Readme API Gateway';
 const API_DESCRIPTION = 'Public entry point for Readme services';
-const API_VERSION = '1.0';
+const API_VERSION = HTTP_SETTINGS.apiVersion;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

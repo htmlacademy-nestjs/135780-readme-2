@@ -19,7 +19,7 @@ test('creating a published post emits an event after persistence', async () => {
     },
   } as PublicationRepository;
   const publisher = {
-    publishPublicationPublished: async () => {
+    flush: async () => {
       calls.push('publish');
     },
   };
@@ -45,7 +45,7 @@ test('creating a draft does not emit an event', async () => {
     },
   } as PublicationRepository;
   const publisher = {
-    publishPublicationPublished: async () => {
+    flush: async () => {
       calls.push('publish');
     },
   };
@@ -104,10 +104,10 @@ test('an instantiated partial DTO preserves omitted required fields', async () =
   );
   const repository = {
     findById: async () => entity,
-    save: async () => entity,
+    update: async () => entity,
   } as unknown as PublicationRepository;
   const publisher = {
-    publishPublicationChanged: async () => undefined,
+    flush: async () => undefined,
   } as unknown as PublicationNotificationPublisher;
   const service = new PublicationService(repository, publisher);
   const dto = plainToInstance(UpdatePublicationDto, {
@@ -126,12 +126,16 @@ test('withdrawing a publication cancels its pending notification', async () => {
   const withdrawn: string[] = [];
   const repository = {
     findById: async () => entity,
-    save: async () => entity,
+    update: async (
+      _entity: unknown,
+      event: { payload: { publicationId: string } },
+    ) => {
+      withdrawn.push(event.payload.publicationId);
+      return entity;
+    },
   } as unknown as PublicationRepository;
   const publisher = {
-    publishPublicationWithdrawn: async (id: string) => {
-      withdrawn.push(id);
-    },
+    flush: async () => undefined,
   } as unknown as PublicationNotificationPublisher;
   const service = new PublicationService(repository, publisher);
   await service.update(

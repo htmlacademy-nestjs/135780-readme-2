@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Comment as CommentModel } from '@prisma/client';
+import { PublicationStatus } from '@project/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { CommentEntity } from './comment.entity';
 import { CommentRepository } from './comment.repository';
@@ -10,6 +11,13 @@ export class CommentPrismaRepository implements CommentRepository {
 
   public async save(entity: CommentEntity): Promise<CommentEntity> {
     const comment = await this.prisma.$transaction(async (transaction) => {
+      await transaction.publication.update({
+        where: {
+          id: entity.publicationId,
+          status: PublicationStatus.Published,
+        },
+        data: { commentCount: { increment: 1 } },
+      });
       const savedComment = await transaction.comment.create({
         data: {
           id: entity.id,
@@ -18,11 +26,6 @@ export class CommentPrismaRepository implements CommentRepository {
           text: entity.text,
           createdAt: entity.createdAt,
         },
-      });
-
-      await transaction.publication.update({
-        where: { id: entity.publicationId },
-        data: { commentCount: { increment: 1 } },
       });
 
       return savedComment;

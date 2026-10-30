@@ -1,3 +1,4 @@
+import { HttpErrorRdo } from '@project/shared-api';
 import {
   Body,
   Controller,
@@ -24,7 +25,11 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { UserId } from '../common/user-id.decorator';
-import { FeedQueryDto } from '@project/shared-api';
+import {
+  ApiCreatePublicationBody,
+  FeedQueryDto,
+  PublicationRdo,
+} from '@project/shared-api';
 import { CreatePublicationDto } from './dto/create-publication.dto';
 import { PublicationQueryDto } from './dto/publication-query.dto';
 import { SearchPublicationQueryDto } from './dto/search-publication-query.dto';
@@ -33,15 +38,22 @@ import { PublicationEntity } from './publication.entity';
 import { PublicationService } from './publication.service';
 
 @ApiTags('publications')
-@ApiBadRequestResponse({ description: 'Request validation failed' })
+@ApiBadRequestResponse({
+  type: HttpErrorRdo,
+  description: 'Request validation failed',
+})
 @Controller('publications')
 export class PublicationController {
   public constructor(private readonly service: PublicationService) {}
 
   @Post()
+  @ApiCreatePublicationBody()
   @ApiHeader({ name: 'x-user-id', description: 'Forwarded by API Gateway' })
   @ApiOperation({ summary: 'Create a publication' })
-  @ApiCreatedResponse({ description: 'Publication created' })
+  @ApiCreatedResponse({
+    type: PublicationRdo,
+    description: 'Publication created',
+  })
   public create(
     @Body() dto: CreatePublicationDto,
     @UserId(ParseUUIDPipe) authorId: string,
@@ -51,7 +63,10 @@ export class PublicationController {
 
   @Get()
   @ApiOperation({ summary: 'Get published publications' })
-  @ApiOkResponse({ description: 'Paginated publication list' })
+  @ApiOkResponse({
+    type: [PublicationRdo],
+    description: 'Paginated publication list',
+  })
   public find(
     @Query() query: PublicationQueryDto,
   ): Promise<PublicationEntity[]> {
@@ -69,6 +84,7 @@ export class PublicationController {
       'Query the current user feed using author identifiers resolved by account',
   })
   @ApiOkResponse({
+    type: [PublicationRdo],
     description:
       'Paginated published posts from followed authors and the current user',
   })
@@ -81,7 +97,10 @@ export class PublicationController {
 
   @Get('search')
   @ApiOperation({ summary: 'Search publications by title' })
-  @ApiOkResponse({ description: 'Up to 20 matching publications' })
+  @ApiOkResponse({
+    type: [PublicationRdo],
+    description: 'Up to 20 matching publications',
+  })
   public search(
     @Query() query: SearchPublicationQueryDto,
   ): Promise<PublicationEntity[]> {
@@ -91,7 +110,10 @@ export class PublicationController {
   @Get('drafts')
   @ApiHeader({ name: 'x-user-id', description: 'Forwarded by API Gateway' })
   @ApiOperation({ summary: 'Get current user drafts' })
-  @ApiOkResponse({ description: 'Draft publication list' })
+  @ApiOkResponse({
+    type: [PublicationRdo],
+    description: 'Draft publication list',
+  })
   public findDrafts(
     @UserId(ParseUUIDPipe) authorId: string,
   ): Promise<PublicationEntity[]> {
@@ -116,8 +138,11 @@ export class PublicationController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get publication details' })
-  @ApiOkResponse({ description: 'Detailed publication' })
-  @ApiNotFoundResponse({ description: 'Publication not found' })
+  @ApiOkResponse({ type: PublicationRdo, description: 'Detailed publication' })
+  @ApiNotFoundResponse({
+    type: HttpErrorRdo,
+    description: 'Publication not found',
+  })
   public getById(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<PublicationEntity> {
@@ -127,8 +152,11 @@ export class PublicationController {
   @Patch(':id')
   @ApiHeader({ name: 'x-user-id', description: 'Forwarded by API Gateway' })
   @ApiOperation({ summary: 'Update an own publication' })
-  @ApiOkResponse({ description: 'Publication updated' })
-  @ApiNotFoundResponse({ description: 'Publication not found' })
+  @ApiOkResponse({ type: PublicationRdo, description: 'Publication updated' })
+  @ApiNotFoundResponse({
+    type: HttpErrorRdo,
+    description: 'Publication not found',
+  })
   public update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePublicationDto,
@@ -142,7 +170,10 @@ export class PublicationController {
   @ApiHeader({ name: 'x-user-id', description: 'Forwarded by API Gateway' })
   @ApiOperation({ summary: 'Delete an own publication' })
   @ApiNoContentResponse({ description: 'Publication deleted' })
-  @ApiNotFoundResponse({ description: 'Publication not found' })
+  @ApiNotFoundResponse({
+    type: HttpErrorRdo,
+    description: 'Publication not found',
+  })
   public delete(
     @Param('id', ParseUUIDPipe) id: string,
     @UserId(ParseUUIDPipe) authorId: string,
@@ -153,8 +184,11 @@ export class PublicationController {
   @Post(':id/repost')
   @ApiHeader({ name: 'x-user-id', description: 'Forwarded by API Gateway' })
   @ApiOperation({ summary: 'Repost a publication' })
-  @ApiCreatedResponse({ description: 'Repost created' })
-  @ApiConflictResponse({ description: 'Publication already reposted' })
+  @ApiCreatedResponse({ type: PublicationRdo, description: 'Repost created' })
+  @ApiConflictResponse({
+    type: HttpErrorRdo,
+    description: 'Publication already reposted',
+  })
   public repost(
     @Param('id', ParseUUIDPipe) id: string,
     @UserId(ParseUUIDPipe) authorId: string,

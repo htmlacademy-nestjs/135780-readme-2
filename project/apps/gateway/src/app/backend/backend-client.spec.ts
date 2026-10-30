@@ -67,37 +67,43 @@ test('gateway joins publications with safe author and image information and shar
   }
 });
 
-test('gateway preserves upstream validation errors', async () => {
-  const server = createServer((_req, res) => {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ message: ['Invalid email'], statusCode: 400 }));
+for (const statusCode of [400, 503]) {
+  test(`gateway preserves upstream ${statusCode} errors`, async () => {
+    const server = createServer((_req, res) => {
+      res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({ message: 'Request cannot be processed', statusCode }),
+      );
+    });
+    await new Promise<void>((resolve) =>
+      server.listen(0, '127.0.0.1', resolve),
+    );
+    try {
+      const url = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+      const client = new BackendClient(
+        new ConfigService({
+          ACCOUNT_URL: url,
+          PUBLICATION_URL: url,
+          FILE_URL: url,
+          NOTIFICATION_URL: url,
+          HTTP_TIMEOUT: 1000,
+        }),
+      );
+      await assert.rejects(
+        client.request(BackendService.Account, 'GET', '/users/test'),
+        (error: unknown) => {
+          assert.ok(error instanceof HttpException);
+          assert.equal(error.getStatus(), statusCode);
+          assert.deepEqual(error.getResponse(), {
+            message: 'Request cannot be processed',
+            statusCode,
+          });
+          return true;
+        },
+      );
+    } finally {
+      server.closeAllConnections();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
   });
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-  try {
-    const url = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
-    const client = new BackendClient(
-      new ConfigService({
-        ACCOUNT_URL: url,
-        PUBLICATION_URL: url,
-        FILE_URL: url,
-        NOTIFICATION_URL: url,
-        HTTP_TIMEOUT: 1000,
-      }),
-    );
-    await assert.rejects(
-      client.request(BackendService.Account, 'GET', '/users/test'),
-      (error: unknown) => {
-        assert.ok(error instanceof HttpException);
-        assert.equal(error.getStatus(), 400);
-        assert.deepEqual(error.getResponse(), {
-          message: ['Invalid email'],
-          statusCode: 400,
-        });
-        return true;
-      },
-    );
-  } finally {
-    server.closeAllConnections();
-    await new Promise<void>((resolve) => server.close(() => resolve()));
-  }
-});
+}

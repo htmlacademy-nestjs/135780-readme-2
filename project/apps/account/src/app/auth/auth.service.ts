@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AUTH_SETTINGS } from '@project/shared-api';
 import { JwtService, type JwtSignOptions } from '@nestjs/jwt';
 import { JWT_CONFIGURATION } from '../config/environment.validation';
 import { LoginUserDto } from '../user/dto/login-user.dto';
@@ -44,6 +45,7 @@ export class AuthService {
     expiresInKey: string,
   ): JwtSignOptions {
     return {
+      algorithm: AUTH_SETTINGS.algorithm,
       secret: this.configService.getOrThrow<string>(secretKey),
       expiresIn: this.configService.getOrThrow<string>(
         expiresInKey,

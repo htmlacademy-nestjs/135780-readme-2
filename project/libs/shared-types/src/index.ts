@@ -6,3 +6,4 @@ export * from './lib/repository.interface.js';
 export * from './lib/stored-file.interface.js';
 export * from './lib/subscription.interface.js';
 export * from './lib/user.interface.js';
+export * from './lib/auth.interface.js';

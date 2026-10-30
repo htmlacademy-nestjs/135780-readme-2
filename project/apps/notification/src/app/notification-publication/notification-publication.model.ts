@@ -18,6 +18,9 @@ export class NotificationPublicationModel {
   @Prop({ required: true })
   public publishedAt!: Date;
 
+  @Prop({ type: [String], default: [] })
+  public notifiedUserIds?: string[];
+
   @Prop()
   public notifiedAt?: Date;
 }

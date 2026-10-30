@@ -25,6 +25,7 @@ export class UserMongoRepository implements UserRepository {
             publicationCount: entity.publicationCount,
             subscriberCount: entity.subscriberCount,
             createdAt: entity.createdAt,
+            $setOnInsert: { notificationPending: true },
           },
           {
             upsert: true,
@@ -51,6 +52,26 @@ export class UserMongoRepository implements UserRepository {
   public async findByEmail(email: string): Promise<UserEntity | null> {
     const document = await this.userModel.findOne({ email }).exec();
     return document ? this.toEntity(document) : null;
+  }
+
+  public async findPendingNotifications(limit: number) {
+    const documents = await this.userModel
+      .find({ notificationPending: { $ne: false } })
+      .sort({ createdAt: 1, _id: 1 })
+      .limit(limit)
+      .lean()
+      .exec();
+    return documents.map((user) => ({
+      userId: user._id,
+      email: user.email,
+      name: user.name,
+    }));
+  }
+
+  public async markNotificationPublished(id: string): Promise<void> {
+    await this.userModel
+      .updateOne({ _id: id }, { $set: { notificationPending: false } })
+      .exec();
   }
 
   private toEntity(document: UserDocument): UserEntity {

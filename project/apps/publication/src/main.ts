@@ -2,14 +2,15 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { APPLICATION_PORTS, HTTP_SETTINGS } from '@project/shared-api';
 import { AppModule } from './app/app.module';
 
-const GLOBAL_PREFIX = 'api';
-const DEFAULT_PORT = 3000;
-const SWAGGER_PATH = 'swagger';
+const GLOBAL_PREFIX = HTTP_SETTINGS.globalPrefix;
+const DEFAULT_PORT = APPLICATION_PORTS.publication;
+const SWAGGER_PATH = HTTP_SETTINGS.swaggerPath;
 const API_TITLE = 'Readme Publication Service';
 const API_DESCRIPTION = 'Publications, comments and likes';
-const API_VERSION = '1.0';
+const API_VERSION = HTTP_SETTINGS.apiVersion;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -34,7 +35,9 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', DEFAULT_PORT);
   await app.listen(port);
-  Logger.log(`🚀 Application is running on: http://localhost:${port}/${GLOBAL_PREFIX}`);
+  Logger.log(
+    `🚀 Application is running on: http://localhost:${port}/${GLOBAL_PREFIX}`,
+  );
   Logger.log(`OpenAPI: http://localhost:${port}/${SWAGGER_PATH}`);
 }
 

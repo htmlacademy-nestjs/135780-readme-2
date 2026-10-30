@@ -30,6 +30,9 @@ export class UserModel {
 
   @Prop({ required: true })
   public createdAt!: Date;
+
+  @Prop({ type: Boolean, required: true, default: true })
+  public notificationPending!: boolean;
 }
 
 export type UserDocument = HydratedDocument<UserModel>;

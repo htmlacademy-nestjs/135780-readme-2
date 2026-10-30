@@ -1,3 +1,4 @@
+import { HttpErrorRdo } from '@project/shared-api';
 import {
   Controller,
   Get,
@@ -18,6 +19,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiPayloadTooLargeResponse,
   ApiProduces,
   ApiTags,
 } from '@nestjs/swagger';
@@ -28,7 +30,14 @@ import type { UploadedFileData } from './uploaded-file.interface';
 import { IMAGE_FILE_TYPE, IMAGE_LIMITS } from './file.constants';
 
 @ApiTags('files')
-@ApiBadRequestResponse({ description: 'Request validation failed' })
+@ApiPayloadTooLargeResponse({
+  type: HttpErrorRdo,
+  description: 'Image exceeds the allowed size',
+})
+@ApiBadRequestResponse({
+  type: HttpErrorRdo,
+  description: 'Request validation failed',
+})
 @Controller('files')
 export class FileController {
   public constructor(private readonly service: FileService) {}
@@ -105,7 +114,7 @@ export class FileController {
   @ApiOperation({ summary: 'Download the stored image' })
   @ApiProduces('image/jpeg', 'image/png')
   @ApiOkResponse({ schema: { type: 'string', format: 'binary' } })
-  @ApiNotFoundResponse({ description: 'File not found' })
+  @ApiNotFoundResponse({ type: HttpErrorRdo, description: 'File not found' })
   public async download(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<StreamableFile> {
@@ -120,7 +129,7 @@ export class FileController {
   @Get('avatars/:id')
   @ApiOperation({ summary: 'Get an image eligible for use as an avatar' })
   @ApiOkResponse({ type: FileEntity })
-  @ApiNotFoundResponse({ description: 'File not found' })
+  @ApiNotFoundResponse({ type: HttpErrorRdo, description: 'File not found' })
   public getAvatar(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<FileEntity> {
@@ -130,7 +139,7 @@ export class FileController {
   @Get(':id')
   @ApiOperation({ summary: 'Get file metadata' })
   @ApiOkResponse({ type: FileEntity })
-  @ApiNotFoundResponse({ description: 'File not found' })
+  @ApiNotFoundResponse({ type: HttpErrorRdo, description: 'File not found' })
   public getById(@Param('id', ParseUUIDPipe) id: string): Promise<FileEntity> {
     return this.service.getById(id);
   }

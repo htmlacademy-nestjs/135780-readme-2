@@ -11,7 +11,17 @@ export class HealthController {
 
   @Get()
   @ApiOperation({ summary: 'Check API Gateway availability' })
-  @ApiOkResponse({ description: 'API Gateway is available' })
+  @ApiOkResponse({
+    description: 'API Gateway is available',
+    schema: {
+      type: 'object',
+      required: ['status', 'timestamp'],
+      properties: {
+        status: { type: 'string', enum: ['ok'] },
+        timestamp: { type: 'string', format: 'date-time' },
+      },
+    },
+  })
   public check(): HealthStatus {
     return this.service.check();
   }

@@ -1,42 +1,30 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import {
-  NotificationRabbitRouting,
-  type PublicationPublishedEvent,
-} from '@project/shared-types';
-import { lastValueFrom } from 'rxjs';
+import { OutboxRelay, OUTBOX_SETTINGS } from '@project/shared-api';
+import { lastValueFrom, timeout } from 'rxjs';
+import { PrismaService } from '../prisma/prisma.service';
 
 export const NOTIFICATION_CLIENT = 'NOTIFICATION_CLIENT';
 
 @Injectable()
-export class PublicationNotificationPublisher {
+export class PublicationNotificationPublisher extends OutboxRelay {
   public constructor(
-    @Inject(NOTIFICATION_CLIENT) private readonly client: ClientProxy,
-  ) {}
-
-  public async publishPublicationPublished(
-    event: PublicationPublishedEvent,
-  ): Promise<void> {
-    await lastValueFrom(
-      this.client.emit(NotificationRabbitRouting.PublicationPublished, event),
-    );
-  }
-
-  public async publishPublicationChanged(
-    event: PublicationPublishedEvent,
-  ): Promise<void> {
-    await lastValueFrom(
-      this.client.emit(NotificationRabbitRouting.PublicationChanged, event),
-    );
-  }
-
-  public async publishPublicationWithdrawn(
-    publicationId: string,
-  ): Promise<void> {
-    await lastValueFrom(
-      this.client.emit(NotificationRabbitRouting.PublicationWithdrawn, {
-        publicationId,
-      }),
-    );
+    @Inject(NOTIFICATION_CLIENT) client: ClientProxy,
+    prisma: PrismaService,
+  ) {
+    super(async () => {
+      const pending = await prisma.outboxEvent.findMany({
+        orderBy: { id: 'asc' },
+        take: OUTBOX_SETTINGS.batchSize,
+      });
+      for (const event of pending) {
+        await lastValueFrom(
+          client
+            .emit(event.pattern, event.payload)
+            .pipe(timeout(OUTBOX_SETTINGS.deliveryTimeout)),
+        );
+        await prisma.outboxEvent.deleteMany({ where: { id: event.id } });
+      }
+    });
   }
 }

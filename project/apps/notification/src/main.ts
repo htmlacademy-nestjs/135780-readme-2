@@ -3,10 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { type MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { APPLICATION_PORTS, HTTP_SETTINGS } from '@project/shared-api';
 import { AppModule } from './app/app.module';
 
-const GLOBAL_PREFIX = 'api';
-const DEFAULT_PORT = 3003;
+const GLOBAL_PREFIX = HTTP_SETTINGS.globalPrefix;
+const DEFAULT_PORT = APPLICATION_PORTS.notification;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -23,10 +24,10 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Readme Notification Service')
     .setDescription('Scheduled email digests for new publications')
-    .setVersion('1.0')
+    .setVersion(HTTP_SETTINGS.apiVersion)
     .build();
   SwaggerModule.setup(
-    'swagger',
+    HTTP_SETTINGS.swaggerPath,
     app,
     SwaggerModule.createDocument(app, swaggerConfig),
   );
@@ -46,7 +47,9 @@ async function bootstrap() {
   const port = config.get<number>('PORT', DEFAULT_PORT);
   await app.listen(port);
   await app.startAllMicroservices();
-  Logger.log(`🚀 Application is running on: http://localhost:${port}/${GLOBAL_PREFIX}`);
+  Logger.log(
+    `🚀 Application is running on: http://localhost:${port}/${GLOBAL_PREFIX}`,
+  );
 }
 
 bootstrap();

@@ -1,3 +1,4 @@
+import { HttpErrorRdo } from '@project/shared-api';
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -11,7 +12,10 @@ import { AuthService } from './auth.service';
 import { AuthTokensRdo } from './rdo/auth-tokens.rdo';
 
 @ApiTags('authentication')
-@ApiBadRequestResponse({ description: 'Request validation failed' })
+@ApiBadRequestResponse({
+  type: HttpErrorRdo,
+  description: 'Request validation failed',
+})
 @Controller('users')
 export class AuthController {
   public constructor(private readonly authService: AuthService) {}
@@ -20,7 +24,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Log in and issue an access/refresh token pair' })
   @ApiOkResponse({ type: AuthTokensRdo })
-  @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
+  @ApiUnauthorizedResponse({
+    type: HttpErrorRdo,
+    description: 'Invalid credentials',
+  })
   public login(@Body() dto: LoginUserDto): Promise<AuthTokensRdo> {
     return this.authService.login(dto);
   }

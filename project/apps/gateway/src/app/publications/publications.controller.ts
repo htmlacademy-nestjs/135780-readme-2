@@ -22,6 +22,7 @@ import {
 } from '@nestjs/swagger';
 import {
   CreatePublicationDto,
+  ApiCreatePublicationBody,
   PublicationQueryDto,
   SearchPublicationQueryDto,
   UpdatePublicationDto,
@@ -39,6 +40,7 @@ export class PublicationsController {
   public constructor(private readonly service: PublicationsGatewayService) {}
 
   @Post()
+  @ApiCreatePublicationBody()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a publication' })
   @ApiCreatedResponse({ type: PublicationResponseDto })

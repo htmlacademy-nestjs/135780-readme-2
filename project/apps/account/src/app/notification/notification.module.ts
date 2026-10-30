@@ -1,10 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import {
-  AccountNotificationPublisher,
-  NOTIFICATION_CLIENT,
-} from './notification.publisher';
+import { NOTIFICATION_CLIENT } from './notification.publisher';
 
 @Module({
   imports: [
@@ -24,7 +21,6 @@ import {
       },
     ]),
   ],
-  providers: [AccountNotificationPublisher],
-  exports: [AccountNotificationPublisher],
+  exports: [ClientsModule],
 })
 export class AccountNotificationModule {}

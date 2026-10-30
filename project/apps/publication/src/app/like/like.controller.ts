@@ -1,3 +1,4 @@
+import { HttpErrorRdo } from '@project/shared-api';
 import {
   Controller,
   Delete,
@@ -18,11 +19,15 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { UserId } from '../common/user-id.decorator';
+import { LikeRdo } from '@project/shared-api';
 import { LikeEntity } from './like.entity';
 import { LikeService } from './like.service';
 
 @ApiTags('likes')
-@ApiBadRequestResponse({ description: 'Request validation failed' })
+@ApiBadRequestResponse({
+  type: HttpErrorRdo,
+  description: 'Request validation failed',
+})
 @Controller('publications/:publicationId/likes')
 export class LikeController {
   public constructor(private readonly service: LikeService) {}
@@ -30,9 +35,15 @@ export class LikeController {
   @Post()
   @ApiHeader({ name: 'x-user-id', description: 'Forwarded by API Gateway' })
   @ApiOperation({ summary: 'Like a publication' })
-  @ApiCreatedResponse({ description: 'Like created' })
-  @ApiConflictResponse({ description: 'Publication is already liked' })
-  @ApiNotFoundResponse({ description: 'Published publication not found' })
+  @ApiCreatedResponse({ type: LikeRdo, description: 'Like created' })
+  @ApiConflictResponse({
+    type: HttpErrorRdo,
+    description: 'Publication is already liked',
+  })
+  @ApiNotFoundResponse({
+    type: HttpErrorRdo,
+    description: 'Published publication not found',
+  })
   public add(
     @Param('publicationId', ParseUUIDPipe) publicationId: string,
     @UserId(ParseUUIDPipe) userId: string,

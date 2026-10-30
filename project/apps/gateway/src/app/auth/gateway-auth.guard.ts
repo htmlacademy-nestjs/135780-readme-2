@@ -9,6 +9,8 @@ import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { isUUID } from 'class-validator';
+import { TokenType } from '@project/shared-types';
+import { AUTH_SETTINGS } from '@project/shared-api';
 import { ROUTE_ACCESS, RouteAccess } from './route-access.decorator';
 
 interface AuthRequest {
@@ -48,9 +50,9 @@ export class GatewayAuthGuard implements CanActivate {
         tokenType: string;
       }>(match[1], {
         secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
-        algorithms: ['HS256'],
+        algorithms: [AUTH_SETTINGS.algorithm],
       });
-      if (payload.tokenType !== 'access' || !isUUID(payload.sub)) {
+      if (payload.tokenType !== TokenType.Access || !isUUID(payload.sub)) {
         throw new Error('Invalid access token payload');
       }
       request.user = { sub: payload.sub, tokenType: payload.tokenType };

@@ -1,10 +1,13 @@
 import * as Joi from 'joi';
+import {
+  APPLICATION_PORTS,
+  CONNECTION_LIMITS,
+  USER_LIMITS,
+  AUTH_SETTINGS,
+} from '@project/shared-api';
 
-const DEFAULT_APP_PORT = 3000;
 const DEFAULT_MONGO_PORT = 27017;
 const DEFAULT_AUTH_SOURCE = 'admin';
-const MIN_SECRET_LENGTH = 8;
-const MIN_JWT_SECRET_LENGTH = 32;
 
 export const JWT_CONFIGURATION = {
   accessSecret: 'JWT_ACCESS_SECRET',
@@ -14,23 +17,31 @@ export const JWT_CONFIGURATION = {
 } as const;
 
 const environmentValidationSchema = Joi.object({
-  PORT: Joi.number().port().default(DEFAULT_APP_PORT),
+  PORT: Joi.number().port().default(APPLICATION_PORTS.account),
   MONGO_HOST: Joi.string().hostname().required(),
   MONGO_PORT: Joi.number().port().default(DEFAULT_MONGO_PORT),
   MONGO_DB: Joi.string().required(),
   MONGO_USER: Joi.string().required(),
-  MONGO_PASSWORD: Joi.string().min(MIN_SECRET_LENGTH).required(),
+  MONGO_PASSWORD: Joi.string()
+    .min(CONNECTION_LIMITS.passwordMinimumLength)
+    .required(),
   MONGO_AUTH_SOURCE: Joi.string().default(DEFAULT_AUTH_SOURCE),
   [JWT_CONFIGURATION.accessSecret]: Joi.string()
-    .min(MIN_JWT_SECRET_LENGTH)
+    .min(USER_LIMITS.jwtSecretMinimumLength)
     .required(),
-  [JWT_CONFIGURATION.accessExpiresIn]: Joi.string().default('15m'),
+  [JWT_CONFIGURATION.accessExpiresIn]: Joi.string().default(
+    AUTH_SETTINGS.accessExpiresIn,
+  ),
   [JWT_CONFIGURATION.refreshSecret]: Joi.string()
-    .min(MIN_JWT_SECRET_LENGTH)
+    .min(USER_LIMITS.jwtSecretMinimumLength)
     .invalid(Joi.ref(JWT_CONFIGURATION.accessSecret))
     .required(),
-  [JWT_CONFIGURATION.refreshExpiresIn]: Joi.string().default('7d'),
-  RABBITMQ_URL: Joi.string().uri({ scheme: ['amqp', 'amqps'] }).required(),
+  [JWT_CONFIGURATION.refreshExpiresIn]: Joi.string().default(
+    AUTH_SETTINGS.refreshExpiresIn,
+  ),
+  RABBITMQ_URL: Joi.string()
+    .uri({ scheme: ['amqp', 'amqps'] })
+    .required(),
   RABBITMQ_QUEUE: Joi.string().required(),
 });
 

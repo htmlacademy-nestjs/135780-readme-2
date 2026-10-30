@@ -4,6 +4,7 @@ import {
   PublicationSort,
   PublicationStatus,
   PublicationType,
+  type PublicationNotificationEvent,
 } from '@project/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { PublicationEntity } from './publication.entity';
@@ -16,12 +17,35 @@ import {
 export class PublicationPrismaRepository implements PublicationRepository {
   public constructor(private readonly prisma: PrismaService) {}
 
-  public async save(entity: PublicationEntity): Promise<PublicationEntity> {
+  public save(
+    entity: PublicationEntity,
+    event?: PublicationNotificationEvent,
+  ): Promise<PublicationEntity> {
+    return this.persist(entity, event, false);
+  }
+
+  public update(
+    entity: PublicationEntity,
+    event?: PublicationNotificationEvent,
+  ): Promise<PublicationEntity> {
+    return this.persist(entity, event, true);
+  }
+
+  private async persist(
+    entity: PublicationEntity,
+    event: PublicationNotificationEvent | undefined,
+    updating: boolean,
+  ): Promise<PublicationEntity> {
     const data = this.toPrismaData(entity);
-    const publication = await this.prisma.publication.upsert({
-      where: { id: entity.id },
-      create: data,
-      update: { ...data, likeCount: undefined, commentCount: undefined },
+    const publication = await this.prisma.$transaction(async (transaction) => {
+      const saved = updating
+        ? await transaction.publication.update({
+            where: { id: entity.id },
+            data: { ...data, likeCount: undefined, commentCount: undefined },
+          })
+        : await transaction.publication.create({ data });
+      await this.recordEvent(transaction, event);
+      return saved;
     });
 
     return this.toEntity(publication);
@@ -98,12 +122,36 @@ export class PublicationPrismaRepository implements PublicationRepository {
     return publication ? this.toEntity(publication) : null;
   }
 
-  public async delete(id: string): Promise<boolean> {
-    const result = await this.prisma.publication.deleteMany({
-      where: { id },
+  public async delete(
+    id: string,
+    event?: PublicationNotificationEvent,
+  ): Promise<boolean> {
+    return this.prisma.$transaction(async (transaction) => {
+      const result = await transaction.publication.deleteMany({
+        where: { id },
+      });
+      if (result.count > 0) {
+        await this.recordEvent(transaction, event);
+      }
+      return result.count > 0;
     });
+  }
 
-    return result.count > 0;
+  private async recordEvent(
+    transaction: Prisma.TransactionClient,
+    event?: PublicationNotificationEvent,
+  ): Promise<void> {
+    if (!event) {
+      return;
+    }
+    await transaction.outboxEvent.create({
+      data: {
+        pattern: event.pattern,
+        payload: JSON.parse(
+          JSON.stringify(event.payload),
+        ) as Prisma.InputJsonValue,
+      },
+    });
   }
 
   private createOrderBy(

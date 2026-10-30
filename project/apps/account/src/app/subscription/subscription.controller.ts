@@ -1,3 +1,4 @@
+import { HttpErrorRdo } from '@project/shared-api';
 import {
   Controller,
   Delete,
@@ -29,6 +30,7 @@ import { SubscriptionService } from './subscription.service';
   description: 'Authenticated user forwarded by API Gateway',
 })
 @ApiBadRequestResponse({
+  type: HttpErrorRdo,
   description: 'Invalid identifiers or self-subscription',
 })
 @Controller('subscriptions')
@@ -48,7 +50,7 @@ export class SubscriptionController {
       'Subscribe to an author; repeated requests return the same subscription',
   })
   @ApiCreatedResponse({ type: SubscriptionRdo })
-  @ApiNotFoundResponse({ description: 'Author not found' })
+  @ApiNotFoundResponse({ type: HttpErrorRdo, description: 'Author not found' })
   public subscribe(
     @UserId(ParseUUIDPipe) userId: string,
     @Param('authorId', ParseUUIDPipe) authorId: string,

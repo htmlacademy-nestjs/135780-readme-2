@@ -49,6 +49,21 @@ export class NotificationPublicationRepository {
       .exec();
   }
 
+  public async markRecipientNotified(
+    publicationIds: string[],
+    userId: string,
+  ): Promise<void> {
+    await this.model
+      .updateMany(
+        {
+          publicationId: { $in: publicationIds },
+          notifiedAt: { $exists: false },
+        },
+        { $addToSet: { notifiedUserIds: userId } },
+      )
+      .exec();
+  }
+
   public async markNotified(publicationIds: string[]): Promise<void> {
     await this.model
       .updateMany(

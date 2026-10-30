@@ -17,10 +17,10 @@ export class FileDiskRepository implements FileRepository {
 
   public async save(entity: FileEntity, content: Buffer): Promise<FileEntity> {
     await mkdir(this.directory, { recursive: true });
-    const contentPath = this.path(entity.id, 'bin');
+    const contentPath = this.getPath(entity.id, 'bin');
     await writeFile(contentPath, content, { flag: 'wx' });
     try {
-      await writeFile(this.path(entity.id, 'json'), JSON.stringify(entity), {
+      await writeFile(this.getPath(entity.id, 'json'), JSON.stringify(entity), {
         flag: 'wx',
       });
     } catch (error) {
@@ -41,7 +41,7 @@ export class FileDiskRepository implements FileRepository {
     return this.read(id, 'bin');
   }
 
-  private path(id: string, extension: string): string {
+  private getPath(id: string, extension: string): string {
     if (!isUUID(id)) {
       throw new Error('Invalid stored file identifier');
     }
@@ -50,7 +50,7 @@ export class FileDiskRepository implements FileRepository {
 
   private async read(id: string, extension: string): Promise<Buffer | null> {
     try {
-      return await readFile(this.path(id, extension));
+      return await readFile(this.getPath(id, extension));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return null;

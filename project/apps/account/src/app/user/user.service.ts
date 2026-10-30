@@ -37,11 +37,7 @@ export class UserService {
     );
 
     await this.repository.save(entity);
-    await this.notificationPublisher.publishUserRegistered({
-      userId: entity.id,
-      email: entity.email,
-      name: entity.name,
-    });
+    await this.notificationPublisher.flush();
     return this.createDetail(entity);
   }
 

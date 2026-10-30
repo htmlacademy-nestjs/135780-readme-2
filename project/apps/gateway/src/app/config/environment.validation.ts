@@ -1,10 +1,15 @@
 import * as Joi from 'joi';
+import {
+  APPLICATION_PORTS,
+  USER_LIMITS,
+  HTTP_SETTINGS,
+} from '@project/shared-api';
 
 export function validateEnvironment(
   config: Record<string, unknown>,
 ): Record<string, unknown> {
   const { error, value } = Joi.object({
-    PORT: Joi.number().port().default(3004),
+    PORT: Joi.number().port().default(APPLICATION_PORTS.gateway),
     ACCOUNT_URL: Joi.string()
       .uri({ scheme: ['http', 'https'] })
       .required(),
@@ -17,8 +22,10 @@ export function validateEnvironment(
     NOTIFICATION_URL: Joi.string()
       .uri({ scheme: ['http', 'https'] })
       .required(),
-    JWT_ACCESS_SECRET: Joi.string().min(32).required(),
-    HTTP_TIMEOUT: Joi.number().integer().min(1).default(10000),
+    JWT_ACCESS_SECRET: Joi.string()
+      .min(USER_LIMITS.jwtSecretMinimumLength)
+      .required(),
+    HTTP_TIMEOUT: Joi.number().integer().min(1).default(HTTP_SETTINGS.timeout),
     CORS_ORIGIN: Joi.string()
       .uri({ scheme: ['http', 'https'] })
       .optional(),

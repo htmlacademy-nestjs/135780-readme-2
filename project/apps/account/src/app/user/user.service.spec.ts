@@ -17,9 +17,8 @@ test('registration publishes a user event after saving', async () => {
     },
   } as unknown as UserRepository;
   const publisher = {
-    publishUserRegistered: async (user: unknown) => {
+    flush: async () => {
       calls.push('publish');
-      return user;
     },
   };
   const service = new UserService(

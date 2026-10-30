@@ -1,3 +1,4 @@
+import { HttpErrorRdo } from '@project/shared-api';
 import {
   Body,
   Controller,
@@ -28,7 +29,10 @@ import { UserDetailRdo } from './rdo/user-detail.rdo';
 import { UserService } from './user.service';
 
 @ApiTags('users')
-@ApiBadRequestResponse({ description: 'Request validation failed' })
+@ApiBadRequestResponse({
+  type: HttpErrorRdo,
+  description: 'Request validation failed',
+})
 @Controller('users')
 export class UserController {
   public constructor(private readonly service: UserService) {}
@@ -36,7 +40,10 @@ export class UserController {
   @Post('register')
   @ApiOperation({ summary: 'Register a user' })
   @ApiCreatedResponse({ type: UserDetailRdo })
-  @ApiConflictResponse({ description: 'Email is already registered' })
+  @ApiConflictResponse({
+    type: HttpErrorRdo,
+    description: 'Email is already registered',
+  })
   public register(@Body() dto: CreateUserDto): Promise<UserDetailRdo> {
     return this.service.register(dto);
   }
@@ -49,8 +56,11 @@ export class UserController {
   })
   @ApiOperation({ summary: 'Change the authenticated user password' })
   @ApiNoContentResponse({ description: 'Password changed' })
-  @ApiUnauthorizedResponse({ description: 'Current password is incorrect' })
-  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiUnauthorizedResponse({
+    type: HttpErrorRdo,
+    description: 'Current password is incorrect',
+  })
+  @ApiNotFoundResponse({ type: HttpErrorRdo, description: 'User not found' })
   public changePassword(
     @UserId(ParseUUIDPipe) id: string,
     @Body() dto: ChangePasswordDto,
@@ -61,7 +71,7 @@ export class UserController {
   @Get(':id')
   @ApiOperation({ summary: 'Get detailed user information' })
   @ApiOkResponse({ type: UserDetailRdo })
-  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiNotFoundResponse({ type: HttpErrorRdo, description: 'User not found' })
   public getById(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<UserDetailRdo> {

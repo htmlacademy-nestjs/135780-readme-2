@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { SubscriptionModule } from '../subscription/subscription.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AccountNotificationModule } from '../notification/notification.module';
+import { AccountNotificationPublisher } from '../notification/notification.publisher';
 import { UserMongoRepository } from './user-mongo.repository';
 import { UserModel, UserSchema } from './user.model';
 import { UserController } from './user.controller';
@@ -17,6 +18,7 @@ import { UserService } from './user.service';
   controllers: [UserController],
   providers: [
     UserService,
+    AccountNotificationPublisher,
     UserMongoRepository,
     {
       provide: USER_REPOSITORY,

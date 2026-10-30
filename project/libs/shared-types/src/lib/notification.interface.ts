@@ -24,3 +24,11 @@ export interface PublicationPublishedEvent {
 export interface PublicationWithdrawnEvent {
   publicationId: string;
 }
+
+export interface PublicationNotificationEvent {
+  pattern:
+    | typeof NotificationRabbitRouting.PublicationPublished
+    | typeof NotificationRabbitRouting.PublicationChanged
+    | typeof NotificationRabbitRouting.PublicationWithdrawn;
+  payload: PublicationPublishedEvent | PublicationWithdrawnEvent;
+}

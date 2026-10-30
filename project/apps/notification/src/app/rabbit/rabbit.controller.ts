@@ -1,150 +1,57 @@
-import { BadRequestException, Controller, Logger } from '@nestjs/common';
+import { Controller, UseFilters } from '@nestjs/common';
 import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
+import { NotificationRabbitRouting } from '@project/shared-types';
+import { NotificationEventService } from '../notification/notification-event.service';
 import {
-  NotificationRabbitRouting,
-  PublicationType,
-  type PublicationPublishedEvent,
-  type UserRegisteredEvent,
-} from '@project/shared-types';
-import { plainToInstance } from 'class-transformer';
-import {
-  IsEmail,
-  IsEnum,
-  IsISO8601,
-  IsOptional,
-  IsString,
-  IsUUID,
-  MaxLength,
-  validate,
-} from 'class-validator';
-import { NotificationPublicationRepository } from '../notification-publication/notification-publication.repository';
-import { SubscriberRepository } from '../subscriber/subscriber.repository';
-
-class UserRegisteredMessage implements UserRegisteredEvent {
-  @IsUUID()
-  public userId!: string;
-
-  @IsEmail()
-  public email!: string;
-
-  @IsString()
-  public name!: string;
-}
-
-class PublicationWithdrawnMessage {
-  @IsUUID()
-  public publicationId!: string;
-}
-
-class PublicationPublishedMessage
-  extends PublicationWithdrawnMessage
-  implements PublicationPublishedEvent
-{
-  @IsUUID()
-  public authorId!: string;
-
-  @IsEnum(PublicationType)
-  public type!: PublicationType;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  public title?: string;
-
-  @IsISO8601()
-  public publishedAt!: string;
-}
+  PublicationPublishedMessage,
+  PublicationWithdrawnMessage,
+  UserRegisteredMessage,
+} from './notification-message.dto';
+import { NotificationMessagePipe } from './notification-message.pipe';
+import { NotificationEventFilter } from './notification-event.filter';
 
 @Controller()
+@UseFilters(NotificationEventFilter)
 export class RabbitController {
-  private readonly logger = new Logger(RabbitController.name);
-
-  public constructor(
-    private readonly subscribers: SubscriberRepository,
-    private readonly publications: NotificationPublicationRepository,
-  ) {}
+  public constructor(private readonly events: NotificationEventService) {}
 
   @EventPattern(NotificationRabbitRouting.UserRegistered)
   public async onUserRegistered(
-    @Payload() payload: unknown,
+    @Payload(new NotificationMessagePipe(UserRegisteredMessage))
+    payload: UserRegisteredMessage,
     @Ctx() context: RmqContext,
   ): Promise<void> {
-    await this.process(context, async () => {
-      const event = await this.parse(UserRegisteredMessage, payload);
-      await this.subscribers.save(event);
-    });
+    await this.events.registerUser(payload);
+    this.acknowledge(context);
   }
-
   @EventPattern(NotificationRabbitRouting.PublicationPublished)
   public async onPublicationPublished(
-    @Payload() payload: unknown,
+    @Payload(new NotificationMessagePipe(PublicationPublishedMessage))
+    payload: PublicationPublishedMessage,
     @Ctx() context: RmqContext,
   ): Promise<void> {
-    await this.process(context, async () => {
-      const event = await this.parse(PublicationPublishedMessage, payload);
-      await this.publications.save(event);
-    });
+    await this.events.publish(payload);
+    this.acknowledge(context);
   }
-
-  private async parse<T extends object>(
-    type: new () => T,
-    payload: unknown,
-  ): Promise<T> {
-    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-      throw new BadRequestException('Invalid notification event');
-    }
-    const event = plainToInstance(type, payload);
-    const errors = await validate(event, {
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    });
-    if (errors.length > 0) {
-      throw new BadRequestException('Invalid notification event');
-    }
-    return event;
-  }
-
   @EventPattern(NotificationRabbitRouting.PublicationChanged)
   public async onPublicationChanged(
-    @Payload() payload: unknown,
+    @Payload(new NotificationMessagePipe(PublicationPublishedMessage))
+    payload: PublicationPublishedMessage,
     @Ctx() context: RmqContext,
   ): Promise<void> {
-    await this.process(context, async () => {
-      await this.publications.refresh(
-        await this.parse(PublicationPublishedMessage, payload),
-      );
-    });
+    await this.events.refresh(payload);
+    this.acknowledge(context);
   }
-
   @EventPattern(NotificationRabbitRouting.PublicationWithdrawn)
   public async onPublicationWithdrawn(
-    @Payload() payload: unknown,
+    @Payload(new NotificationMessagePipe(PublicationWithdrawnMessage))
+    payload: PublicationWithdrawnMessage,
     @Ctx() context: RmqContext,
   ): Promise<void> {
-    await this.process(context, async () => {
-      const event = await this.parse(PublicationWithdrawnMessage, payload);
-      await this.publications.withdraw(event.publicationId);
-    });
+    await this.events.withdraw(payload.publicationId);
+    this.acknowledge(context);
   }
-
-  private async process(
-    context: RmqContext,
-    action: () => Promise<void>,
-  ): Promise<void> {
-    const channel = context.getChannelRef();
-    const message = context.getMessage();
-    try {
-      await action();
-      channel.ack(message);
-    } catch (error) {
-      const invalid = error instanceof BadRequestException;
-      channel.nack(message, false, !invalid);
-      this.logger.error(
-        invalid
-          ? 'Invalid notification event rejected'
-          : 'Notification event processing failed',
-        error,
-      );
-    }
+  private acknowledge(context: RmqContext): void {
+    context.getChannelRef().ack(context.getMessage());
   }
 }

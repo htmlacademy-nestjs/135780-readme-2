@@ -27,6 +27,8 @@ FROM base AS runtime
 ENV NODE_ENV=production PORT=3003
 COPY --from=production-dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/package.json ./package.json
+COPY --from=build --chown=node:node /app/libs/shared-api/package.json ./libs/shared-api/package.json
+COPY --from=build --chown=node:node /app/libs/shared-api/dist ./libs/shared-api/dist
 COPY --from=build --chown=node:node /app/libs/shared-types/package.json ./libs/shared-types/package.json
 COPY --from=build --chown=node:node /app/libs/shared-types/dist ./libs/shared-types/dist
 COPY --from=build --chown=node:node /app/apps/notification/package.json ./apps/notification/package.json

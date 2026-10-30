@@ -6,17 +6,17 @@ import { parseEnv } from 'node:util';
 import mongoose from 'mongoose';
 import { PrismaClient } from '@prisma/client';
 
-const NONCE = Date.now().toString();
+const nonce = Date.now().toString();
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j1ioAAAAASUVORK5CYII=',
   'base64',
 );
-const environment = (name: string): Record<string, string | undefined> =>
+const getEnvironment = (name: string): Record<string, string | undefined> =>
   existsSync(`apps/${name}/.env`)
     ? parseEnv(readFileSync(`apps/${name}/.env`, 'utf8'))
     : {};
-const gatewayEnvironment = environment('gateway');
-const BASE_URL = `http://localhost:${gatewayEnvironment.PORT ?? 3004}/api`;
+const gatewayEnvironment = getEnvironment('gateway');
+const baseUrl = `http://localhost:${gatewayEnvironment.PORT ?? 3004}/api`;
 const state = {
   users: [] as string[],
   emails: [] as string[],
@@ -26,7 +26,7 @@ const state = {
   mailbox: '',
 };
 const prisma = new PrismaClient({
-  datasources: { db: { url: environment('publication').DATABASE_URL } },
+  datasources: { db: { url: getEnvironment('publication').DATABASE_URL } },
 });
 
 interface User {
@@ -71,7 +71,7 @@ async function request<T = unknown>(
   options: RequestOptions = {},
   expected = 200,
 ): Promise<T> {
-  const response = await fetch(BASE_URL + path, {
+  const response = await fetch(baseUrl + path, {
     method: options.method ?? 'GET',
     headers: {
       ...(options.body && !(options.body instanceof FormData)
@@ -106,7 +106,7 @@ async function upload(
 ): Promise<Image> {
   const bytes = Buffer.concat([PNG, Buffer.alloc(size - PNG.length)]);
   const form = new FormData();
-  form.append('file', new Blob([bytes]), `verification-${NONCE}.png`);
+  form.append('file', new Blob([bytes]), `verification-${nonce}.png`);
   const image = await request<Image>(
     path,
     { method: 'POST', body: form, token },
@@ -114,7 +114,7 @@ async function upload(
   );
   if (expected === 201) {
     state.files.push(image.id);
-    const response = await fetch(BASE_URL.replace(/\/api$/, '') + image.path);
+    const response = await fetch(baseUrl.replace(/\/api$/, '') + image.path);
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('content-type'), 'image/png');
     assert.deepEqual(Buffer.from(await response.arrayBuffer()), bytes);
@@ -126,7 +126,7 @@ async function register(
   label: string,
   avatarId?: string,
 ): Promise<{ user: User; tokens: Tokens }> {
-  const email = `verify-${NONCE}-${label}@example.com`;
+  const email = `verify-${nonce}-${label}@example.com`;
   state.emails.push(email);
   const user = await request<User>(
     '/users/register',
@@ -167,9 +167,9 @@ async function create(body: object, token: string): Promise<Post> {
 }
 
 async function connect(name: string) {
-  const e = environment(name);
+  const serviceEnvironment = getEnvironment(name);
   const get = (key: string): string => {
-    const value = e[key];
+    const value = serviceEnvironment[key];
     assert.ok(value, `${name}: missing ${key}`);
     return value;
   };
@@ -177,18 +177,11 @@ async function connect(name: string) {
   return mongoose.createConnection(uri).asPromise();
 }
 
-async function verifyMail(
-  token: string,
+async function waitForNotificationChanges(
   updated: Post,
   withdrawn: Post,
   removed: Post,
-): Promise<void> {
-  const e = environment('notification');
-  assert.ok(
-    ['localhost', '127.0.0.1'].includes(e.SMTP_HOST ?? '') &&
-      e.SMTP_PORT === '1025',
-    'Email verification requires the local Fake SMTP server',
-  );
+) {
   const connection = await connect('notification');
   try {
     const publications = connection.db!.collection('notification_publications');
@@ -221,8 +214,23 @@ async function verifyMail(
   } finally {
     await connection.close();
   }
+}
+
+async function verifyMail(
+  token: string,
+  updated: Post,
+  withdrawn: Post,
+  removed: Post,
+): Promise<void> {
+  const serviceEnvironment = getEnvironment('notification');
+  assert.ok(
+    ['localhost', '127.0.0.1'].includes(serviceEnvironment.SMTP_HOST ?? '') &&
+      serviceEnvironment.SMTP_PORT === '1025',
+    'Email verification requires the local Fake SMTP server',
+  );
+  await waitForNotificationChanges(updated, withdrawn, removed);
   await request('/notifications/send', { method: 'POST' }, 401);
-  const port = Number(e.MAILPIT_UI_PORT ?? 8025);
+  const port = Number(serviceEnvironment.MAILPIT_UI_PORT ?? 8025);
   assert.ok(Number.isInteger(port) && port > 0 && port <= 65535);
   const mailbox = `http://localhost:${port}`;
   state.mailbox = mailbox;
@@ -268,7 +276,10 @@ async function verifyMail(
   );
 }
 
-async function verifyCore() {
+type CoreActors = Awaited<ReturnType<typeof verifyAuthentication>>;
+type CoreContext = CoreActors & { posts: Post[]; title: string };
+
+async function verifyAuthentication() {
   await request('/health');
   await request('/publications');
   const invalid = await request<{ message: string[] }>(
@@ -313,13 +324,17 @@ async function verifyCore() {
     },
     400,
   );
-  const title = `Verification video ${NONCE}`;
+  return { first, second, token, other, photo };
+}
+
+async function createPublicationFormats({ first, token, photo }: CoreActors) {
+  const title = `Verification video ${nonce}`;
   const posts: Post[] = [];
   for (const data of [
     { type: 'video', title, videoUrl: 'https://youtu.be/dQw4w9WgXcQ' },
     {
       type: 'text',
-      title: `Verification text ${NONCE}`,
+      title: `Verification text ${nonce}`,
       announcement: 'a'.repeat(50),
       text: 't'.repeat(100),
     },
@@ -339,6 +354,10 @@ async function verifyCore() {
         post.authorId === first.user.id && post.author.id === first.user.id,
     ),
   );
+  return { posts, title };
+}
+
+async function verifyInvalidPublications({ token, title }: CoreContext) {
   for (const tags of [
     ['tag', null],
     ['tag', 42],
@@ -377,6 +396,26 @@ async function verifyCore() {
     },
     400,
   );
+}
+
+async function verifyInvalidPublicationEdits({
+  first,
+  posts,
+  token,
+  other,
+}: CoreContext) {
+  for (const publishedAt of [
+    '20261030',
+    '2026-W44-5',
+    '2026-303',
+    '2026-02-30',
+  ]) {
+    await request(
+      '/publications/' + posts[0].id,
+      { method: 'PATCH', token, body: { publishedAt } },
+      400,
+    );
+  }
   await request(
     '/publications/' + posts[0].id,
     { method: 'PATCH', token, body: { title: 'short' } },
@@ -402,7 +441,15 @@ async function verifyCore() {
     },
     403,
   );
-  const changedTitle = `Updated video title ${NONCE}`;
+}
+
+async function verifyPublicationEditsAndLists({
+  first,
+  posts,
+  token,
+  other,
+}: CoreContext) {
+  const changedTitle = `Updated video title ${nonce}`;
   const updated = await request<Post>('/publications/' + posts[0].id, {
     method: 'PATCH',
     token,
@@ -418,6 +465,20 @@ async function verifyCore() {
   await request('/publications/' + withdrawn.id, {}, 404);
   await request('/publications/' + withdrawn.id, { token });
   await request('/publications/' + withdrawn.id, { token: other }, 404);
+  await request(
+    '/publications/' + withdrawn.id + '/likes',
+    { method: 'POST', token: other },
+    404,
+  );
+  await request(
+    '/publications/' + withdrawn.id + '/comments',
+    {
+      method: 'POST',
+      token: other,
+      body: { text: 'A comment on a hidden draft' },
+    },
+    404,
+  );
   assert.ok(
     (await request<Post[]>('/publications/drafts', { token })).some(
       (post) => post.id === withdrawn.id,
@@ -445,10 +506,57 @@ async function verifyCore() {
       )
     ).some((post) => post.id === updated.id),
   );
+  return { updated, withdrawn, query };
+}
+
+async function verifyCommentPagination(
+  post: Post,
+  token: string,
+  other: string,
+) {
+  await Promise.all([
+    ...Array.from({ length: 49 }, (_value, index) =>
+      request(
+        '/publications/' + post.id + '/comments',
+        {
+          method: 'POST',
+          token: other,
+          body: { text: 'Pagination comment ' + index },
+        },
+        201,
+      ),
+    ),
+    request('/publications/' + post.id, {
+      method: 'PATCH',
+      token,
+      body: { tags: ['edited'] },
+    }),
+  ]);
+  assert.equal(
+    (await request<Post>('/publications/' + post.id)).commentCount,
+    51,
+  );
+  assert.equal(
+    (await request<unknown[]>('/publications/' + post.id + '/comments')).length,
+    50,
+  );
+  assert.equal(
+    (await request<unknown[]>('/publications/' + post.id + '/comments?page=2'))
+      .length,
+    1,
+  );
+}
+
+async function verifyInteractions({
+  posts,
+  token,
+  other,
+  query,
+}: CoreContext & { query: string }) {
   const likeResults = await Promise.all(
     Array.from({ length: 4 }, async () => {
       const response = await fetch(
-        BASE_URL + '/publications/' + posts[1].id + '/likes',
+        baseUrl + '/publications/' + posts[1].id + '/likes',
         { method: 'POST', headers: { Authorization: 'Bearer ' + other } },
       );
       return response.status;
@@ -477,41 +585,7 @@ async function verifyCore() {
   const counted = await request<Post>('/publications/' + posts[1].id);
   assert.equal(counted.likeCount, 1);
   assert.equal(counted.commentCount, 2);
-  await Promise.all([
-    ...Array.from({ length: 49 }, (_value, index) =>
-      request(
-        '/publications/' + posts[1].id + '/comments',
-        {
-          method: 'POST',
-          token: other,
-          body: { text: 'Pagination comment ' + index },
-        },
-        201,
-      ),
-    ),
-    request('/publications/' + posts[1].id, {
-      method: 'PATCH',
-      token,
-      body: { tags: ['edited'] },
-    }),
-  ]);
-  assert.equal(
-    (await request<Post>('/publications/' + posts[1].id)).commentCount,
-    51,
-  );
-  assert.equal(
-    (await request<unknown[]>('/publications/' + posts[1].id + '/comments'))
-      .length,
-    50,
-  );
-  assert.equal(
-    (
-      await request<unknown[]>(
-        '/publications/' + posts[1].id + '/comments?page=2',
-      )
-    ).length,
-    1,
-  );
+  await verifyCommentPagination(posts[1], token, other);
   const sorted = await request<Post[]>('/publications' + query + '&sort=likes');
   assert.equal(sorted[0].id, posts[1].id);
   await request(
@@ -519,9 +593,17 @@ async function verifyCore() {
     { method: 'DELETE', token },
     403,
   );
+}
+
+async function verifyRepostsAndCascade({
+  first,
+  posts,
+  token,
+  other,
+}: CoreContext) {
   const repostResponses = await Promise.all(
     Array.from({ length: 4 }, () =>
-      fetch(BASE_URL + '/publications/' + posts[3].id + '/repost', {
+      fetch(baseUrl + '/publications/' + posts[3].id + '/repost', {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + other },
       }),
@@ -571,6 +653,9 @@ async function verifyCore() {
     await prisma.like.count({ where: { publicationId: posts[1].id } }),
     0,
   );
+}
+
+async function verifyPasswordChange({ first, token }: CoreActors) {
   await request(
     '/users/password',
     {
@@ -598,7 +683,12 @@ async function verifyCore() {
     method: 'POST',
     body: { email: first.user.email, password: 'changed12' },
   });
-  await verifyMail(token, updated, withdrawn, posts[3]);
+}
+
+async function verifyPagination({
+  token,
+  query,
+}: CoreContext & { query: string }) {
   const paging: Post[] = [];
   for (let index = 0; index < 26; index++) {
     paging.push(
@@ -635,8 +725,11 @@ async function verifyCore() {
   } finally {
     await notification.close();
   }
+}
+
+async function verifySwagger() {
   const swagger = (await (
-    await fetch(BASE_URL.replace(/\/api$/, '') + '/swagger-json')
+    await fetch(baseUrl.replace(/\/api$/, '') + '/swagger-json')
   ).json()) as {
     components: {
       securitySchemes: { bearer: object };
@@ -647,16 +740,26 @@ async function verifyCore() {
     swagger.components.securitySchemes.bearer &&
       swagger.components.schemas.PublicationResponseDto,
   );
-  console.log('Core HTTP scenarios: passed');
-  return { first, second, token, other };
 }
 
-async function verifyOptional({
-  first,
-  second,
-  token,
-  other,
-}: Awaited<ReturnType<typeof verifyCore>>): Promise<void> {
+async function verifyCore() {
+  const actors = await verifyAuthentication();
+  const context = { ...actors, ...(await createPublicationFormats(actors)) };
+  await verifyInvalidPublications(context);
+  await verifyInvalidPublicationEdits(context);
+  const { updated, withdrawn, query } =
+    await verifyPublicationEditsAndLists(context);
+  await verifyInteractions({ ...context, query });
+  await verifyRepostsAndCascade(context);
+  await verifyPasswordChange(actors);
+  await verifyMail(actors.token, updated, withdrawn, context.posts[3]);
+  await verifyPagination({ ...context, query });
+  await verifySwagger();
+  console.log('Core HTTP scenarios: passed');
+  return actors;
+}
+
+async function createFeedFixtures({ first, token, other }: CoreActors) {
   const third = await register('third');
   const followed = await create(
     {
@@ -680,6 +783,12 @@ async function verifyOptional({
   assert.ok(
     own.length > 0 && own.every((post) => post.authorId === first.user.id),
   );
+  return { third, followed };
+}
+
+type FeedContext = CoreActors & Awaited<ReturnType<typeof createFeedFixtures>>;
+
+async function verifySubscriptions({ first, second, token }: CoreActors) {
   await request('/publications/feed', {}, 401);
   await request('/subscriptions/' + second.user.id, { method: 'POST' }, 401);
   await request(
@@ -718,6 +827,15 @@ async function verifyOptional({
     ).length,
     1,
   );
+}
+
+async function verifyFeedSelection({
+  first,
+  second,
+  token,
+  third,
+  followed,
+}: FeedContext) {
   const feed = await request<Post[]>('/publications/feed', { token });
   assert.ok(feed.some((post) => post.id === followed.id));
   assert.ok(
@@ -745,6 +863,9 @@ async function verifyOptional({
     { token },
   );
   assert.notEqual(firstPage[0].id, secondPage[0].id);
+}
+
+async function verifyUnsubscription({ first, second, token }: CoreActors) {
   await request(
     '/subscriptions/' + second.user.id,
     { method: 'DELETE', token },
@@ -765,6 +886,13 @@ async function verifyOptional({
       (post) => post.authorId === first.user.id,
     ),
   );
+}
+
+async function verifyOptional(actors: CoreActors): Promise<void> {
+  const fixtures = await createFeedFixtures(actors);
+  await verifySubscriptions(actors);
+  await verifyFeedSelection({ ...actors, ...fixtures });
+  await verifyUnsubscription(actors);
   console.log('Subscriptions and personal feed HTTP scenarios: passed');
 }
 
@@ -799,18 +927,20 @@ async function cleanup(): Promise<void> {
     await notification.close();
   }
   const directory = resolve(
-    environment('file').UPLOAD_DIRECTORY ?? 'apps/file/uploads',
+    getEnvironment('file').UPLOAD_DIRECTORY ?? 'apps/file/uploads',
   );
   for (const id of state.files) {
     assert.match(id, /^[a-f0-9-]{36}$/i);
     for (const extension of ['bin', 'json']) {
       const target = resolve(join(directory, `${id}.${extension}`));
       assert.equal(dirname(target), directory);
-      await unlink(target).catch((error) => {
-        if (error.code !== 'ENOENT') {
+      try {
+        await unlink(target);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
           throw error;
         }
-      });
+      }
     }
   }
   await prisma.$disconnect();
@@ -831,18 +961,26 @@ async function cleanup(): Promise<void> {
   console.log('Own verification records and images removed');
 }
 
-verifyCore()
-  .then(async (actors) => {
+function reportFailure(error: unknown): void {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exitCode = 1;
+}
+
+async function main(): Promise<void> {
+  try {
+    const actors = await verifyCore();
     if (process.argv.includes('--optional')) {
       await verifyOptional(actors);
     }
-  })
-  .catch((error) => {
-    console.error(error.message);
-    process.exitCode = 1;
-  })
-  .finally(cleanup)
-  .catch((error) => {
-    console.error(error.message);
-    process.exitCode = 1;
-  });
+  } catch (error) {
+    reportFailure(error);
+  } finally {
+    try {
+      await cleanup();
+    } catch (error) {
+      reportFailure(error);
+    }
+  }
+}
+
+void main();

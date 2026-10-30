@@ -1,9 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, Length } from 'class-validator';
+import { COMMENT_LIMITS } from './comment.constants.js';
 
 export class CreateCommentDto {
-  @ApiProperty({ minLength: 10, maxLength: 300 })
+  @ApiProperty({
+    minLength: COMMENT_LIMITS.minimum,
+    maxLength: COMMENT_LIMITS.maximum,
+  })
   @IsString()
-  @Length(10, 300)
+  @Length(COMMENT_LIMITS.minimum, COMMENT_LIMITS.maximum)
   public text!: string;
 }

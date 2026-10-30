@@ -21,6 +21,15 @@ enum PublicationStatus {
   draft
 }
 
+model OutboxEvent {
+  id        BigInt   @id @default(autoincrement())
+  pattern   String
+  payload   Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("publication_outbox")
+}
+
 model Publication {
   id                    String            @id @default(uuid()) @db.Uuid
   authorId              String            @map("author_id") @db.Uuid

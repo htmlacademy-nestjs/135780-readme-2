@@ -1,7 +1,13 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { MailService } from '../mail/mail.service';
 import { NotificationPublicationRepository } from '../notification-publication/notification-publication.repository';
 import { SubscriberRepository } from '../subscriber/subscriber.repository';
+import type { SubscriberModel } from '../subscriber/subscriber.model';
+import type { NotificationPublicationModel } from '../notification-publication/notification-publication.model';
 
 export interface SendNotificationResult {
   recipientCount: number;
@@ -35,8 +41,21 @@ export class NotificationService {
         return { recipientCount: 0, publicationCount: 0 };
       }
 
+      let recipientCount = 0;
+      let failedRecipientCount = 0;
       for (const recipient of recipients) {
-        await this.mail.sendDigest(recipient.email, pending);
+        try {
+          if (await this.sendToRecipient(recipient, pending)) {
+            recipientCount += 1;
+          }
+        } catch {
+          failedRecipientCount += 1;
+        }
+      }
+      if (failedRecipientCount > 0) {
+        throw new ServiceUnavailableException(
+          'Some emails could not be delivered; retry the request',
+        );
       }
 
       await this.publications.markNotified(
@@ -44,11 +63,29 @@ export class NotificationService {
       );
 
       return {
-        recipientCount: recipients.length,
+        recipientCount,
         publicationCount: pending.length,
       };
     } finally {
       this.sending = false;
     }
+  }
+
+  private async sendToRecipient(
+    recipient: SubscriberModel,
+    pending: NotificationPublicationModel[],
+  ): Promise<boolean> {
+    const unsent = pending.filter(
+      (publication) => !publication.notifiedUserIds?.includes(recipient.userId),
+    );
+    if (unsent.length === 0) {
+      return false;
+    }
+    await this.mail.sendDigest(recipient.email, unsent);
+    await this.publications.markRecipientNotified(
+      unsent.map((publication) => publication.publicationId),
+      recipient.userId,
+    );
+    return true;
   }
 }
