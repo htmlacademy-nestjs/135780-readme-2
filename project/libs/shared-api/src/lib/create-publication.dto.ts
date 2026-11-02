@@ -17,13 +17,14 @@ export class CreatePublicationDto extends PublicationContentDto {
         ) {
           return true;
         }
-        const allowed: readonly string[] =
+        const allowedFields: readonly string[] =
           PUBLICATION_CONTENT_FIELDS[value as PublicationType];
         const content = args.object as unknown as Record<string, unknown>;
         return Object.values(PUBLICATION_CONTENT_FIELDS)
           .flat()
           .every(
-            (field) => content[field] === undefined || allowed.includes(field),
+            (field) =>
+              content[field] === undefined || allowedFields.includes(field),
           );
       },
       defaultMessage: () => 'Content fields must match the publication type',

@@ -15,6 +15,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { IsPublicationText } from './publication-text.validator.js';
+import { IsTextWithoutNullCharacters } from './text-without-null.validator.js';
 import {
   PUBLICATION_LIMITS,
   TAG_PATTERN,
@@ -44,6 +45,7 @@ export class PublicationContentDto {
   @IsDefined()
   @IsString()
   @Length(PUBLICATION_LIMITS.title.minimum, PUBLICATION_LIMITS.title.maximum)
+  @IsTextWithoutNullCharacters()
   public title?: string;
 
   @ApiPropertyOptional({
@@ -56,6 +58,7 @@ export class PublicationContentDto {
   @IsDefined()
   @IsUrl()
   @Matches(YOUTUBE_URL_PATTERN)
+  @IsTextWithoutNullCharacters()
   public videoUrl?: string;
 
   @ApiPropertyOptional({
@@ -72,6 +75,7 @@ export class PublicationContentDto {
     PUBLICATION_LIMITS.announcement.minimum,
     PUBLICATION_LIMITS.announcement.maximum,
   )
+  @IsTextWithoutNullCharacters()
   public announcement?: string;
 
   @ApiPropertyOptional({
@@ -86,6 +90,7 @@ export class PublicationContentDto {
   @IsDefined()
   @IsString()
   @IsPublicationText()
+  @IsTextWithoutNullCharacters()
   public text?: string;
 
   @ApiPropertyOptional({
@@ -102,6 +107,7 @@ export class PublicationContentDto {
     PUBLICATION_LIMITS.quoteAuthor.minimum,
     PUBLICATION_LIMITS.quoteAuthor.maximum,
   )
+  @IsTextWithoutNullCharacters()
   public quoteAuthor?: string;
 
   @ApiPropertyOptional({
@@ -123,12 +129,14 @@ export class PublicationContentDto {
   )
   @IsDefined()
   @IsUrl()
+  @IsTextWithoutNullCharacters()
   public linkUrl?: string;
 
   @ApiPropertyOptional({ maxLength: PUBLICATION_LIMITS.description })
   @ValidateIf((_dto, value) => value !== undefined)
   @IsString()
   @MaxLength(PUBLICATION_LIMITS.description)
+  @IsTextWithoutNullCharacters()
   public description?: string;
 
   @ApiPropertyOptional({ type: [String], maxItems: PUBLICATION_LIMITS.tags })

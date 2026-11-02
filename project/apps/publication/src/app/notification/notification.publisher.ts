@@ -13,11 +13,11 @@ export class PublicationNotificationPublisher extends OutboxRelay {
     prisma: PrismaService,
   ) {
     super(async () => {
-      const pending = await prisma.outboxEvent.findMany({
+      const pendingEvents = await prisma.outboxEvent.findMany({
         orderBy: { id: 'asc' },
         take: OUTBOX_SETTINGS.batchSize,
       });
-      for (const event of pending) {
+      for (const event of pendingEvents) {
         await lastValueFrom(
           client
             .emit(event.pattern, event.payload)

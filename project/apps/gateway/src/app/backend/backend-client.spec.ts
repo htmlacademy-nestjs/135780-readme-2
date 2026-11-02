@@ -6,8 +6,9 @@ import { HttpException } from '@nestjs/common';
 import { BackendClient, BackendService } from './backend-client';
 import { PresentationService } from '../presentation/presentation.service';
 
+const AUTHOR_ID = '00000000-0000-4000-8000-000000000001';
+
 test('gateway joins publications with safe author and image information and shares author lookups', async () => {
-  const authorId = '00000000-0000-4000-8000-000000000001';
   let authorReads = 0;
   const server = createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
@@ -15,7 +16,7 @@ test('gateway joins publications with safe author and image information and shar
       authorReads++;
       res.end(
         JSON.stringify({
-          id: authorId,
+          id: AUTHOR_ID,
           email: 'reader@example.com',
           name: 'Reader',
           createdAt: new Date().toISOString(),
@@ -52,14 +53,14 @@ test('gateway joins publications with safe author and image information and shar
     );
     const service = new PresentationService(client);
     const posts = [
-      { id: 'post1', authorId, photoId: 'photo' },
-      { id: 'post2', authorId },
+      { id: 'post1', authorId: AUTHOR_ID, photoId: 'photo' },
+      { id: 'post2', authorId: AUTHOR_ID },
     ] as Parameters<PresentationService['getPublications']>[0];
-    const result = await service.getPublications(posts);
-    assert.equal(result[0].author.name, 'Reader');
-    assert.equal(result[0].author.publicationCount, 2);
-    assert.equal('passwordHash' in result[0].author, false);
-    assert.equal(result[0].photo?.path, '/api/files/photo/content');
+    const publicationViews = await service.getPublications(posts);
+    assert.equal(publicationViews[0].author.name, 'Reader');
+    assert.equal(publicationViews[0].author.publicationCount, 2);
+    assert.equal('passwordHash' in publicationViews[0].author, false);
+    assert.equal(publicationViews[0].photo?.path, '/api/files/photo/content');
     assert.equal(authorReads, 1);
   } finally {
     server.closeAllConnections();

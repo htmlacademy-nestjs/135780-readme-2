@@ -31,8 +31,8 @@ export class NotificationService {
     this.sending = true;
 
     try {
-      const pending = await this.publications.findPending();
-      if (pending.length === 0) {
+      const pendingPublications = await this.publications.findPending();
+      if (pendingPublications.length === 0) {
         return { recipientCount: 0, publicationCount: 0 };
       }
 
@@ -45,7 +45,7 @@ export class NotificationService {
       let failedRecipientCount = 0;
       for (const recipient of recipients) {
         try {
-          if (await this.sendToRecipient(recipient, pending)) {
+          if (await this.sendToRecipient(recipient, pendingPublications)) {
             recipientCount += 1;
           }
         } catch {
@@ -59,12 +59,12 @@ export class NotificationService {
       }
 
       await this.publications.markNotified(
-        pending.map((item) => item.publicationId),
+        pendingPublications.map((item) => item.publicationId),
       );
 
       return {
         recipientCount,
-        publicationCount: pending.length,
+        publicationCount: pendingPublications.length,
       };
     } finally {
       this.sending = false;
@@ -73,17 +73,17 @@ export class NotificationService {
 
   private async sendToRecipient(
     recipient: SubscriberModel,
-    pending: NotificationPublicationModel[],
+    pendingPublications: NotificationPublicationModel[],
   ): Promise<boolean> {
-    const unsent = pending.filter(
+    const unsentPublications = pendingPublications.filter(
       (publication) => !publication.notifiedUserIds?.includes(recipient.userId),
     );
-    if (unsent.length === 0) {
+    if (unsentPublications.length === 0) {
       return false;
     }
-    await this.mail.sendDigest(recipient.email, unsent);
+    await this.mail.sendDigest(recipient.email, unsentPublications);
     await this.publications.markRecipientNotified(
-      unsent.map((publication) => publication.publicationId),
+      unsentPublications.map((publication) => publication.publicationId),
       recipient.userId,
     );
     return true;

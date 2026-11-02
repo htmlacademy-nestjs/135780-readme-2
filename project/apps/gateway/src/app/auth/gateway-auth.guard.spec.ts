@@ -12,10 +12,12 @@ import { JwtService } from '@nestjs/jwt';
 import { GatewayAuthGuard } from './gateway-auth.guard';
 import { ROUTE_ACCESS, RouteAccess } from './route-access.decorator';
 
-const secret = 'test-access-secret-at-least-32-characters';
-const userId = '00000000-0000-4000-8000-000000000001';
+const AUTH_FIXTURE = {
+  accessSecret: 'test-access-secret-at-least-32-characters',
+  userId: '00000000-0000-4000-8000-000000000001',
+} as const;
 
-function context(
+function createContext(
   request: object,
   access: RouteAccess = RouteAccess.Protected,
 ): ExecutionContext {
@@ -32,30 +34,34 @@ test('access token identity wins over an untrusted user header', async () => {
   const jwt = new JwtService();
   const guard = new GatewayAuthGuard(
     jwt,
-    new ConfigService({ JWT_ACCESS_SECRET: secret }),
+    new ConfigService({ JWT_ACCESS_SECRET: AUTH_FIXTURE.accessSecret }),
     new Reflector(),
   );
   const token = await jwt.signAsync(
-    { sub: userId, email: 'reader@example.com', tokenType: 'access' },
-    { secret, expiresIn: '1m' },
+    {
+      sub: AUTH_FIXTURE.userId,
+      email: 'reader@example.com',
+      tokenType: 'access',
+    },
+    { secret: AUTH_FIXTURE.accessSecret, expiresIn: '1m' },
   );
   const request = {
     headers: { authorization: `Bearer ${token}`, 'x-user-id': 'spoofed' },
     user: undefined as unknown,
   };
-  assert.equal(await guard.canActivate(context(request)), true);
-  assert.equal((request.user as { sub: string }).sub, userId);
+  assert.equal(await guard.canActivate(createContext(request)), true);
+  assert.equal((request.user as { sub: string }).sub, AUTH_FIXTURE.userId);
 });
 
 test('missing, expired and refresh tokens cannot access protected endpoints', async () => {
   const jwt = new JwtService();
   const guard = new GatewayAuthGuard(
     jwt,
-    new ConfigService({ JWT_ACCESS_SECRET: secret }),
+    new ConfigService({ JWT_ACCESS_SECRET: AUTH_FIXTURE.accessSecret }),
     new Reflector(),
   );
   await assert.rejects(
-    guard.canActivate(context({ headers: {} })),
+    guard.canActivate(createContext({ headers: {} })),
     UnauthorizedException,
   );
   for (const options of [
@@ -63,12 +69,12 @@ test('missing, expired and refresh tokens cannot access protected endpoints', as
     { tokenType: 'access', expiresIn: -1 },
   ]) {
     const token = await jwt.signAsync(
-      { sub: userId, tokenType: options.tokenType },
-      { secret, expiresIn: options.expiresIn },
+      { sub: AUTH_FIXTURE.userId, tokenType: options.tokenType },
+      { secret: AUTH_FIXTURE.accessSecret, expiresIn: options.expiresIn },
     );
     await assert.rejects(
       guard.canActivate(
-        context({ headers: { authorization: `Bearer ${token}` } }),
+        createContext({ headers: { authorization: `Bearer ${token}` } }),
       ),
       UnauthorizedException,
     );
@@ -79,20 +85,20 @@ test('registration is anonymous only, while public reads permit anonymous users'
   const jwt = new JwtService();
   const guard = new GatewayAuthGuard(
     jwt,
-    new ConfigService({ JWT_ACCESS_SECRET: secret }),
+    new ConfigService({ JWT_ACCESS_SECRET: AUTH_FIXTURE.accessSecret }),
     new Reflector(),
   );
   assert.equal(
-    await guard.canActivate(context({ headers: {} }, RouteAccess.Public)),
+    await guard.canActivate(createContext({ headers: {} }, RouteAccess.Public)),
     true,
   );
   const token = await jwt.signAsync(
-    { sub: userId, tokenType: 'access' },
-    { secret },
+    { sub: AUTH_FIXTURE.userId, tokenType: 'access' },
+    { secret: AUTH_FIXTURE.accessSecret },
   );
   await assert.rejects(
     guard.canActivate(
-      context(
+      createContext(
         { headers: { authorization: `Bearer ${token}` } },
         RouteAccess.Anonymous,
       ),

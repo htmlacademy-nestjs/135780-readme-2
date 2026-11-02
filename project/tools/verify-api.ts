@@ -187,17 +187,17 @@ async function waitForNotificationChanges(
     const publications = connection.db!.collection('notification_publications');
     const deadline = Date.now() + 5000;
     while (true) {
-      const pending = await publications
+      const pendingPublications = await publications
         .find({
           publicationId: { $in: [updated.id, withdrawn.id, removed.id] },
         })
         .toArray();
       if (
-        pending.some(
+        pendingPublications.some(
           (post) =>
             post.publicationId === updated.id && post.title === updated.title,
         ) &&
-        !pending.some(
+        !pendingPublications.some(
           (post) =>
             post.publicationId === withdrawn.id ||
             post.publicationId === removed.id,
@@ -282,6 +282,7 @@ type CoreContext = CoreActors & { posts: Post[]; title: string };
 async function verifyAuthentication() {
   await request('/health');
   await request('/publications');
+  await request('/publications/search?title=%00', {}, 400);
   const invalid = await request<{ message: string[] }>(
     '/users/register',
     { method: 'POST', body: { email: 'bad', name: 'a', password: 'x' } },
@@ -491,13 +492,13 @@ async function verifyPublicationEditsAndLists({
       .length,
     1,
   );
-  const page1 = await request<Post[]>(
+  const firstPagePublications = await request<Post[]>(
     '/publications' + query + '&limit=1&page=1',
   );
-  const page2 = await request<Post[]>(
+  const secondPagePublications = await request<Post[]>(
     '/publications' + query + '&limit=1&page=2',
   );
-  assert.notEqual(page1[0].id, page2[0].id);
+  assert.notEqual(firstPagePublications[0].id, secondPagePublications[0].id);
   await request('/publications?limit=26', {}, 400);
   assert.ok(
     (
@@ -586,8 +587,10 @@ async function verifyInteractions({
   assert.equal(counted.likeCount, 1);
   assert.equal(counted.commentCount, 2);
   await verifyCommentPagination(posts[1], token, other);
-  const sorted = await request<Post[]>('/publications' + query + '&sort=likes');
-  assert.equal(sorted[0].id, posts[1].id);
+  const sortedPublications = await request<Post[]>(
+    '/publications' + query + '&sort=likes',
+  );
+  assert.equal(sortedPublications[0].id, posts[1].id);
   await request(
     '/publications/' + posts[1].id + '/comments/' + comments[0].id,
     { method: 'DELETE', token },
@@ -689,21 +692,29 @@ async function verifyPagination({
   token,
   query,
 }: CoreContext & { query: string }) {
-  const paging: Post[] = [];
+  const paginationPublications: Post[] = [];
   for (let index = 0; index < 26; index++) {
-    paging.push(
+    paginationPublications.push(
       await create(
         { type: 'link', linkUrl: 'https://example.com/page/' + index },
         token,
       ),
     );
   }
-  const defaultPage = await request<Post[]>('/publications' + query);
-  const remainder = await request<Post[]>('/publications' + query + '&page=2');
-  assert.equal(defaultPage.length, 25);
-  assert.equal(remainder.length, 3);
+  const defaultPagePublications = await request<Post[]>(
+    '/publications' + query,
+  );
+  const remainingPublications = await request<Post[]>(
+    '/publications' + query + '&page=2',
+  );
+  assert.equal(defaultPagePublications.length, 25);
+  assert.equal(remainingPublications.length, 3);
   assert.equal(
-    new Set([...defaultPage, ...remainder].map((post) => post.id)).size,
+    new Set(
+      [...defaultPagePublications, ...remainingPublications].map(
+        (post) => post.id,
+      ),
+    ).size,
     28,
   );
   const notification = await connect('notification');
@@ -713,8 +724,8 @@ async function verifyPagination({
       (await notification
         .db!.collection('notification_publications')
         .countDocuments({
-          publicationId: { $in: paging.map((post) => post.id) },
-        })) !== paging.length
+          publicationId: { $in: paginationPublications.map((post) => post.id) },
+        })) !== paginationPublications.length
     ) {
       assert.ok(
         Date.now() < deadline,
@@ -779,9 +790,12 @@ async function createFeedFixtures({ first, token, other }: CoreActors) {
     },
     third.tokens.accessToken,
   );
-  const own = await request<Post[]>('/publications/feed', { token });
+  const ownPublications = await request<Post[]>('/publications/feed', {
+    token,
+  });
   assert.ok(
-    own.length > 0 && own.every((post) => post.authorId === first.user.id),
+    ownPublications.length > 0 &&
+      ownPublications.every((post) => post.authorId === first.user.id),
   );
   return { third, followed };
 }
@@ -836,10 +850,12 @@ async function verifyFeedSelection({
   third,
   followed,
 }: FeedContext) {
-  const feed = await request<Post[]>('/publications/feed', { token });
-  assert.ok(feed.some((post) => post.id === followed.id));
+  const feedPublications = await request<Post[]>('/publications/feed', {
+    token,
+  });
+  assert.ok(feedPublications.some((post) => post.id === followed.id));
   assert.ok(
-    feed.every((post) =>
+    feedPublications.every((post) =>
       [first.user.id, second.user.id].includes(post.authorId),
     ),
   );
@@ -847,22 +863,25 @@ async function verifyFeedSelection({
     await request('/publications/feed?authorId=' + third.user.id, { token }),
     [],
   );
-  const tagged = await request<Post[]>(
+  const taggedPublications = await request<Post[]>(
     '/publications/feed?type=quote&tag=TAGGED',
     { token },
   );
   assert.deepEqual(
-    tagged.map((post) => post.id),
+    taggedPublications.map((post) => post.id),
     [followed.id],
   );
-  const firstPage = await request<Post[]>('/publications/feed?limit=1&page=1', {
-    token,
-  });
-  const secondPage = await request<Post[]>(
+  const firstPagePublications = await request<Post[]>(
+    '/publications/feed?limit=1&page=1',
+    {
+      token,
+    },
+  );
+  const secondPagePublications = await request<Post[]>(
     '/publications/feed?limit=1&page=2',
     { token },
   );
-  assert.notEqual(firstPage[0].id, secondPage[0].id);
+  assert.notEqual(firstPagePublications[0].id, secondPagePublications[0].id);
 }
 
 async function verifyUnsubscription({ first, second, token }: CoreActors) {

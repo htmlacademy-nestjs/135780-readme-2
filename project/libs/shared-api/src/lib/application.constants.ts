@@ -15,6 +15,12 @@ export const HTTP_SETTINGS = {
 
 export const CONNECTION_LIMITS = { passwordMinimumLength: 8 } as const;
 
+export const MONGO_DEFAULTS = {
+  accountPort: 27017,
+  notificationPort: 27018,
+  authSource: 'admin',
+} as const;
+
 export const AUTH_SETTINGS = {
   accessExpiresIn: '15m',
   refreshExpiresIn: '7d',

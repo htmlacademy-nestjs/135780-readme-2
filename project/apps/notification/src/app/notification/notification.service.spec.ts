@@ -38,8 +38,8 @@ test('an empty publication queue sends no email', async () => {
 });
 
 test('successful digest sends each recipient and marks publications', async () => {
-  const sentTo: string[] = [];
-  let marked: string[] = [];
+  const recipientEmails: string[] = [];
+  let notifiedPublicationIds: string[] = [];
   const service = new NotificationService(
     {
       findAll: async () => [
@@ -50,21 +50,21 @@ test('successful digest sends each recipient and marks publications', async () =
     {
       findPending: async () => [publication],
       markNotified: async (ids: string[]) => {
-        marked = ids;
+        notifiedPublicationIds = ids;
       },
       markRecipientNotified: async () => undefined,
     } as unknown as NotificationPublicationRepository,
     {
       sendDigest: async (email: string) => {
-        sentTo.push(email);
+        recipientEmails.push(email);
       },
     } as unknown as MailService,
   );
 
   const result = await service.sendPending();
 
-  assert.deepEqual(sentTo, ['one@example.com', 'two@example.com']);
-  assert.deepEqual(marked, [publication.publicationId]);
+  assert.deepEqual(recipientEmails, ['one@example.com', 'two@example.com']);
+  assert.deepEqual(notifiedPublicationIds, [publication.publicationId]);
   assert.deepEqual(result, { recipientCount: 2, publicationCount: 1 });
 });
 
