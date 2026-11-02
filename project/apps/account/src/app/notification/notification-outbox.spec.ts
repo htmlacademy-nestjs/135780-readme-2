@@ -13,7 +13,7 @@ test('registration succeeds during a broker outage and its durable event is retr
   let stored: UserEntity | undefined;
   let pending = true;
   let unavailable = true;
-  const delivered: UserRegisteredEvent[] = [];
+  const deliveredEvents: UserRegisteredEvent[] = [];
   const repository = {
     findByEmail: async () => stored ?? null,
     save: async (user: UserEntity) => {
@@ -33,7 +33,7 @@ test('registration succeeds during a broker outage and its durable event is retr
       if (unavailable) {
         return throwError(() => new Error('Broker unavailable'));
       }
-      delivered.push(event);
+      deliveredEvents.push(event);
       return of(undefined);
     },
   } as unknown as ClientProxy;
@@ -50,12 +50,12 @@ test('registration succeeds during a broker outage and its durable event is retr
   });
   assert.equal(user.email, 'outbox@example.com');
   assert.equal(pending, true);
-  assert.equal(delivered.length, 0);
+  assert.equal(deliveredEvents.length, 0);
   unavailable = false;
   await publisher.flush();
   await publisher.flush();
   assert.equal(pending, false);
-  assert.deepEqual(delivered, [
+  assert.deepEqual(deliveredEvents, [
     { userId: user.id, email: 'outbox@example.com', name: 'Outbox Reader' },
   ]);
 });

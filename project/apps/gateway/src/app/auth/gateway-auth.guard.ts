@@ -40,15 +40,15 @@ export class GatewayAuthGuard implements CanActivate {
       }
       return true;
     }
-    const match = /^Bearer ([^\s]+)$/i.exec(authorization);
-    if (!match) {
+    const authorizationMatches = /^Bearer ([^\s]+)$/i.exec(authorization);
+    if (!authorizationMatches) {
       throw new UnauthorizedException('Invalid authorization header');
     }
     try {
       const payload = await this.jwt.verifyAsync<{
         sub: string;
         tokenType: string;
-      }>(match[1], {
+      }>(authorizationMatches[1], {
         secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
         algorithms: [AUTH_SETTINGS.algorithm],
       });

@@ -43,7 +43,7 @@ test('invalid RabbitMQ events are discarded while infrastructure failures are re
   const filter = new filters[0]() as {
     catch(error: unknown, host: ArgumentsHost): Observable<never>;
   };
-  const requeued: boolean[] = [];
+  const requeueDecisions: boolean[] = [];
   const message = { content: Buffer.from('{}') };
   const host = {
     switchToRpc: () => ({
@@ -53,7 +53,7 @@ test('invalid RabbitMQ events are discarded while infrastructure failures are re
           nack: (actual: unknown, multiple: boolean, requeue: boolean) => {
             assert.equal(actual, message);
             assert.equal(multiple, false);
-            requeued.push(requeue);
+            requeueDecisions.push(requeue);
           },
         }),
       }),
@@ -65,5 +65,5 @@ test('invalid RabbitMQ events are discarded while infrastructure failures are re
   await lastValueFrom(filter.catch(new Error('Database unavailable'), host), {
     defaultValue: undefined,
   });
-  assert.deepEqual(requeued, [false, true]);
+  assert.deepEqual(requeueDecisions, [false, true]);
 });

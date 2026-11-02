@@ -14,29 +14,29 @@ import type { PublicationEntity } from '../publication/publication.entity';
 
 test('a persisted publication keeps its outbox event until the broker recovers', async () => {
   let unavailable = true;
-  const pending: {
+  const pendingEvents: {
     id: bigint;
     pattern: string;
     payload: unknown;
     createdAt: Date;
   }[] = [];
-  const delivered: unknown[] = [];
+  const deliveredEvents: unknown[] = [];
   const repository = {
     save: async (
       publication: PublicationEntity,
       event?: { pattern: string; payload: unknown },
     ) => {
       if (event) {
-        pending.push({ id: 1n, ...event, createdAt: new Date() });
+        pendingEvents.push({ id: 1n, ...event, createdAt: new Date() });
       }
       return publication;
     },
   } as unknown as PublicationRepository;
   const prisma = {
     outboxEvent: {
-      findMany: async () => [...pending],
+      findMany: async () => [...pendingEvents],
       deleteMany: async () => {
-        pending.splice(0, 1);
+        pendingEvents.splice(0, 1);
         return { count: 1 };
       },
     },
@@ -46,7 +46,7 @@ test('a persisted publication keeps its outbox event until the broker recovers',
       if (unavailable) {
         return throwError(() => new Error('Broker unavailable'));
       }
-      delivered.push({ pattern, payload });
+      deliveredEvents.push({ pattern, payload });
       return of(undefined);
     },
   } as unknown as ClientProxy;
@@ -56,12 +56,12 @@ test('a persisted publication keeps its outbox event until the broker recovers',
     { type: PublicationType.Link, linkUrl: 'https://example.com' },
     '11111111-1111-4111-8111-111111111111',
   );
-  assert.equal(pending.length, 1);
+  assert.equal(pendingEvents.length, 1);
   unavailable = false;
   await publisher.flush();
   await publisher.flush();
-  assert.equal(pending.length, 0);
-  assert.deepEqual(delivered, [
+  assert.equal(pendingEvents.length, 0);
+  assert.deepEqual(deliveredEvents, [
     {
       pattern: NotificationRabbitRouting.PublicationPublished,
       payload: {

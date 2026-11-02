@@ -123,14 +123,14 @@ test('withdrawing a publication cancels its pending notification', async () => {
     { type: PublicationType.Link, linkUrl: 'https://example.com' },
     authorId,
   );
-  const withdrawn: string[] = [];
+  const withdrawnPublicationIds: string[] = [];
   const repository = {
     findById: async () => entity,
     update: async (
       _entity: unknown,
       event: { payload: { publicationId: string } },
     ) => {
-      withdrawn.push(event.payload.publicationId);
+      withdrawnPublicationIds.push(event.payload.publicationId);
       return entity;
     },
   } as unknown as PublicationRepository;
@@ -143,7 +143,7 @@ test('withdrawing a publication cancels its pending notification', async () => {
     { status: PublicationStatus.Draft },
     authorId,
   );
-  assert.deepEqual(withdrawn, [entity.id]);
+  assert.deepEqual(withdrawnPublicationIds, [entity.id]);
 });
 
 test('an empty following list restricts the feed to the current author', async () => {

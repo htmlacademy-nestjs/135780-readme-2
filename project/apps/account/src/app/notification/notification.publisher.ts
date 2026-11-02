@@ -14,10 +14,10 @@ export class AccountNotificationPublisher extends OutboxRelay {
     @Inject(USER_REPOSITORY) repository: UserRepository,
   ) {
     super(async () => {
-      const pending = await repository.findPendingNotifications(
+      const pendingEvents = await repository.findPendingNotifications(
         OUTBOX_SETTINGS.batchSize,
       );
-      for (const event of pending) {
+      for (const event of pendingEvents) {
         await lastValueFrom(
           client
             .emit(NotificationRabbitRouting.UserRegistered, event)
