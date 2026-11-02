@@ -10,6 +10,8 @@ import { plainToInstance } from 'class-transformer';
 import { UpdatePublicationDto } from './dto/update-publication.dto';
 import type { PublicationFilter } from './publication.repository';
 
+const AUTHOR_ID = '11111111-1111-4111-8111-111111111111';
+
 test('creating a published post emits an event after persistence', async () => {
   const calls: string[] = [];
   const repository = {
@@ -67,14 +69,13 @@ test('creating a draft does not emit an event', async () => {
 });
 
 test('updates validate merged content before persisting a publication', async () => {
-  const authorId = '11111111-1111-4111-8111-111111111111';
   const entity = new PublicationEntity(
     {
       type: PublicationType.Quote,
       text: 'A sufficiently long quote',
       quoteAuthor: 'Author',
     },
-    authorId,
+    AUTHOR_ID,
   );
   const repository = {
     findById: async () => entity,
@@ -87,20 +88,19 @@ test('updates validate merged content before persisting a publication', async ()
     {} as PublicationNotificationPublisher,
   );
   await assert.rejects(
-    service.update(entity.id, { text: 'short' }, authorId),
+    service.update(entity.id, { text: 'short' }, AUTHOR_ID),
     BadRequestException,
   );
 });
 
 test('an instantiated partial DTO preserves omitted required fields', async () => {
-  const authorId = '11111111-1111-4111-8111-111111111111';
   const entity = new PublicationEntity(
     {
       type: PublicationType.Video,
       title: 'An original video title',
       videoUrl: 'https://youtu.be/dQw4w9WgXcQ',
     },
-    authorId,
+    AUTHOR_ID,
   );
   const repository = {
     findById: async () => entity,
@@ -113,15 +113,14 @@ test('an instantiated partial DTO preserves omitted required fields', async () =
   const dto = plainToInstance(UpdatePublicationDto, {
     title: 'An updated video title',
   });
-  const updated = await service.update(entity.id, dto, authorId);
+  const updated = await service.update(entity.id, dto, AUTHOR_ID);
   assert.equal(updated.videoUrl, 'https://youtu.be/dQw4w9WgXcQ');
 });
 
 test('withdrawing a publication cancels its pending notification', async () => {
-  const authorId = '11111111-1111-4111-8111-111111111111';
   const entity = new PublicationEntity(
     { type: PublicationType.Link, linkUrl: 'https://example.com' },
-    authorId,
+    AUTHOR_ID,
   );
   const withdrawnPublicationIds: string[] = [];
   const repository = {
@@ -141,7 +140,7 @@ test('withdrawing a publication cancels its pending notification', async () => {
   await service.update(
     entity.id,
     { status: PublicationStatus.Draft },
-    authorId,
+    AUTHOR_ID,
   );
   assert.deepEqual(withdrawnPublicationIds, [entity.id]);
 });

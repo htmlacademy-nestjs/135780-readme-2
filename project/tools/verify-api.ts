@@ -282,6 +282,7 @@ type CoreContext = CoreActors & { posts: Post[]; title: string };
 async function verifyAuthentication() {
   await request('/health');
   await request('/publications');
+  await request('/publications/search?title=%00', {}, 400);
   const invalid = await request<{ message: string[] }>(
     '/users/register',
     { method: 'POST', body: { email: 'bad', name: 'a', password: 'x' } },

@@ -1,5 +1,6 @@
 import { PublicationType } from '@project/shared-types';
 import {
+  length,
   ValidateBy,
   type ValidationArguments,
   type ValidationOptions,
@@ -33,11 +34,7 @@ export function IsPublicationText(
           const limits = getLimits(
             (args.object as { type?: PublicationType }).type,
           );
-          return (
-            typeof value === 'string' &&
-            value.length >= limits.minimum &&
-            value.length <= limits.maximum
-          );
+          return length(value, limits.minimum, limits.maximum);
         },
         defaultMessage(args: ValidationArguments): string {
           const limits = getLimits(

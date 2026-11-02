@@ -4,10 +4,8 @@ import {
   CONNECTION_LIMITS,
   USER_LIMITS,
   AUTH_SETTINGS,
+  MONGO_DEFAULTS,
 } from '@project/shared-api';
-
-const DEFAULT_MONGO_PORT = 27017;
-const DEFAULT_AUTH_SOURCE = 'admin';
 
 export const JWT_CONFIGURATION = {
   accessSecret: 'JWT_ACCESS_SECRET',
@@ -19,13 +17,13 @@ export const JWT_CONFIGURATION = {
 const environmentValidationSchema = Joi.object({
   PORT: Joi.number().port().default(APPLICATION_PORTS.account),
   MONGO_HOST: Joi.string().hostname().required(),
-  MONGO_PORT: Joi.number().port().default(DEFAULT_MONGO_PORT),
+  MONGO_PORT: Joi.number().port().default(MONGO_DEFAULTS.accountPort),
   MONGO_DB: Joi.string().required(),
   MONGO_USER: Joi.string().required(),
   MONGO_PASSWORD: Joi.string()
     .min(CONNECTION_LIMITS.passwordMinimumLength)
     .required(),
-  MONGO_AUTH_SOURCE: Joi.string().default(DEFAULT_AUTH_SOURCE),
+  MONGO_AUTH_SOURCE: Joi.string().default(MONGO_DEFAULTS.authSource),
   [JWT_CONFIGURATION.accessSecret]: Joi.string()
     .min(USER_LIMITS.jwtSecretMinimumLength)
     .required(),

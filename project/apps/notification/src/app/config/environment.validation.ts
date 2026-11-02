@@ -1,5 +1,9 @@
 import * as Joi from 'joi';
-import { APPLICATION_PORTS, CONNECTION_LIMITS } from '@project/shared-api';
+import {
+  APPLICATION_PORTS,
+  CONNECTION_LIMITS,
+  MONGO_DEFAULTS,
+} from '@project/shared-api';
 
 const environmentSchema = Joi.object({
   PORT: Joi.number().port().default(APPLICATION_PORTS.notification),
@@ -8,13 +12,13 @@ const environmentSchema = Joi.object({
     .required(),
   RABBITMQ_QUEUE: Joi.string().required(),
   MONGO_HOST: Joi.string().hostname().required(),
-  MONGO_PORT: Joi.number().port().default(27018),
+  MONGO_PORT: Joi.number().port().default(MONGO_DEFAULTS.notificationPort),
   MONGO_DB: Joi.string().required(),
   MONGO_USER: Joi.string().required(),
   MONGO_PASSWORD: Joi.string()
     .min(CONNECTION_LIMITS.passwordMinimumLength)
     .required(),
-  MONGO_AUTH_SOURCE: Joi.string().default('admin'),
+  MONGO_AUTH_SOURCE: Joi.string().default(MONGO_DEFAULTS.authSource),
   SMTP_HOST: Joi.string().hostname().required(),
   SMTP_PORT: Joi.number().port().required(),
   SMTP_SECURE: Joi.boolean().default(false),
